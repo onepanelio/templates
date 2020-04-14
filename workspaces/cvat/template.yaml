@@ -1,253 +1,250 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-spec:
-  arguments:
-    parameters:
-    - name: name
-      value: cvat
-      type: input.text
-    - name: startup-script
-      value: pip install -r requirements.txt
-      type: textarea.textarea
-    - name: action
+arguments:
+  parameters:
+  - name: name
+    value: cvat
+    type: input.text
+  - name: startup-script
+    value: pip install -r requirements.txt
+    type: textarea.textarea
+  - name: action
+    value: apply
+    type: input.radio
+    options:
+    - name: apply
       value: apply
-      type: input.radio
-      options:
-      - name: apply
-        value: apply
-      - name: create
-        value: create
-    - name: machine-type
-      type: select.select
+    - name: create
+      value: create
+  - name: machine-type
+    type: select.select
+    value: Standard_D4s_v3
+    options:
+    - name: Standard_D4s_v3
       value: Standard_D4s_v3
-      options:
-      - name: Standard_D4s_v3
-        value: Standard_D4s_v3
-    - name: volume
-      value: 5
-      type: input.number
-    - name: host
-      value: <host>
-      type: input.hidden
-    - name: replicas
-      value: 1
-      type: input.hidden
-  entrypoint: instance-tmpl
-  templates:
-  - name: instance-tmpl
-    dag:
-       tasks:
-       - name: service
-         template: instance-service-tmpl
-       - name: virtual-service
-         dependencies: [service]
-         template: instance-virtual-service-tmpl
-       - name: statefulset
-         dependencies: [virtual-service]
-         template: instance-statefulset-tmpl
-       - name: slack-notify
-         dependencies: [statefulset]
-         template: slack-notify
-       - name: pvc
-         template: instance-pvc-tmpl
-         dependencies: [statefulset]
-         arguments:
-          parameters:
-          - name: pvc-name
-            value: "{{item}}"
-         # List of pvc names to delete
-         withItems:
-          - data
-          - db
-          - keys
-          - logs
-          - models
-         when: "{{workflow.parameters.action}} == delete"
-  - name: instance-service-tmpl
-    resource:
-      action: "{{workflow.parameters.action}}"
-      manifest: |
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: {{workflow.parameters.name}}
-        spec:
-          ports:
-          - name: cvat-ui
-            port: 80
-            protocol: TCP
-            targetPort: 80
-          - name: cvat
-            port: 8080
-            protocol: TCP
-            targetPort: 8080
-          selector:
+  - name: volume
+    value: 5
+    type: input.number
+  - name: host
+    value: <host>
+    type: input.hidden
+  - name: replicas
+    value: 1
+    type: input.hidden
+entrypoint: instance-tmpl
+templates:
+- name: instance-tmpl
+  dag:
+    tasks:
+    - name: service
+      template: instance-service-tmpl
+    - name: virtual-service
+      dependencies: [service]
+      template: instance-virtual-service-tmpl
+    - name: statefulset
+      dependencies: [virtual-service]
+      template: instance-statefulset-tmpl
+    - name: slack-notify
+      dependencies: [statefulset]
+      template: slack-notify
+    - name: pvc
+      template: instance-pvc-tmpl
+      dependencies: [statefulset]
+      arguments:
+        parameters:
+        - name: pvc-name
+          value: "{{item}}"
+      # List of pvc names to delete
+      withItems:
+      - data
+      - db
+      - keys
+      - logs
+      - models
+      when: "{{workflow.parameters.action}} == delete"
+- name: instance-service-tmpl
+  resource:
+    action: "{{workflow.parameters.action}}"
+    manifest: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {{workflow.parameters.name}}
+      spec:
+        ports:
+        - name: cvat-ui
+          port: 80
+          protocol: TCP
+          targetPort: 80
+        - name: cvat
+          port: 8080
+          protocol: TCP
+          targetPort: 8080
+        selector:
+          instanceUID: {{workflow.parameters.name}}
+        type: ClusterIP
+- name: instance-virtual-service-tmpl
+  resource:
+    action: "{{workflow.parameters.action}}"
+    manifest: |
+      apiVersion: networking.istio.io/v1alpha3
+      kind: VirtualService
+      metadata:
+        name: {{workflow.parameters.name}}
+      spec:
+        hosts:
+        - {{workflow.parameters.name}}-{{workflow.namespace}}.{{workflow.parameters.host}}
+        gateways:
+        - istio-system/ingressgateway
+        http:
+        - match:
+          - uri:
+              regex: /api/.*|/git/.*|/tensorflow/.*|/auto_annotation/.*|/analytics/.*|/static/.*|/admin/.*|/documentation/.*|/dextr/.*|/reid/.*
+          - queryParams:
+              id:
+                regex: \d+.*
+          route:
+          - destination:
+              port:
+                number: 8080
+              host: {{workflow.parameters.name}}
+        - match:
+          - uri:
+              prefix: /
+          route:
+          - destination:
+              port:
+                number: 80
+              host: {{workflow.parameters.name}}
+- name: instance-statefulset-tmpl
+  resource:
+    action: "{{workflow.parameters.action}}"
+    manifest: |
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: {{workflow.parameters.name}}
+      spec:
+        replicas: {{workflow.parameters.replicas}}
+        serviceName: {{workflow.parameters.name}}
+        selector:
+          matchLabels:
             instanceUID: {{workflow.parameters.name}}
-          type: ClusterIP
-  - name: instance-virtual-service-tmpl
-    resource:
-      action: "{{workflow.parameters.action}}"
-      manifest: |
-        apiVersion: networking.istio.io/v1alpha3
-        kind: VirtualService
-        metadata:
-          name: {{workflow.parameters.name}}
-        spec:
-          hosts:
-          - {{workflow.parameters.name}}-{{workflow.namespace}}.{{workflow.parameters.host}}
-          gateways:
-          - istio-system/ingressgateway
-          http:
-          - match:
-            - uri:
-                regex: /api/.*|/git/.*|/tensorflow/.*|/auto_annotation/.*|/analytics/.*|/static/.*|/admin/.*|/documentation/.*|/dextr/.*|/reid/.*
-            - queryParams:
-                id:
-                  regex: \d+.*
-            route:
-            - destination:
-                port:
-                  number: 8080
-                host: {{workflow.parameters.name}}
-          - match:
-            - uri:
-                prefix: /
-            route:
-            - destination:
-                port:
-                  number: 80
-                host: {{workflow.parameters.name}}
-  - name: instance-statefulset-tmpl
-    resource:
-      action: "{{workflow.parameters.action}}"
-      manifest: |
-        apiVersion: apps/v1
-        kind: StatefulSet
-        metadata:
-          name: {{workflow.parameters.name}}
-        spec:
-          replicas: {{workflow.parameters.replicas}}
-          serviceName: {{workflow.parameters.name}}
-          selector:
-            matchLabels:
+        template:
+          metadata:
+            labels:
               instanceUID: {{workflow.parameters.name}}
-          template:
-            metadata:
-              labels:
-                instanceUID: {{workflow.parameters.name}}
-            spec:
-              nodeSelector:
-                beta.kubernetes.io/instance-type: {{workflow.parameters.machine-type}}
-              containers:
-              - name: cvat-db
-                image: postgres:10-alpine
-                env:
-                  - name: POSTGRES_USER
-                    value: root
-                  - name: POSTGRES_DB
-                    value: cvat
-                  - name: POSTGRES_HOST_AUTH_METHOD
-                    value: trust
-                  - name: PGDATA
-                    value: /var/lib/postgresql/data
-                ports:
-                - containerPort: 5432
-                  name: tcp
-                volumeMounts:
-                  - name: db
-                    mountPath: /var/lib/postgresql
-              - name: cvat-redis
-                image: redis:4.0-alpine
-                ports:
-                - containerPort: 6379
-                  name: tcp
-              - name: cvat
-                image: onepanel/cvat:v0.6.7
-                env:
-                  - name: DJANGO_MODWSGI_EXTRA_ARGS
-                    value: ""
-                  - name: ALLOWED_HOSTS
-                    value: '*'
-                  - name: CVAT_REDIS_HOST
-                    value: localhost
-                  - name: CVAT_POSTGRES_HOST
-                    value: localhost
-                  - name: CVAT_SHARE_URL
-                    value: /home/django/data
-                ports:
-                - containerPort: 8080
-                  name: http
-                volumeMounts:
-                  - name: data
-                    mountPath: /home/django/data
-                volumeMounts:
-                  - name: keys
-                    mountPath: /home/django/keys
-                volumeMounts:
-                  - name: logs
-                    mountPath: /home/django/logs
-                volumeMounts:
-                  - name: models
-                    mountPath: /home/django/models
-              - name: cvat-ui
-                image: onepanel/cvat-ui:v0.6.6
-                ports:
-                - containerPort: 80
-                  name: http
-          volumeClaimTemplates:
-          - metadata:
-              name: data
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: default
-              resources:
-                requests:
-                  storage: {{workflow.parameters.volume}}Gi
-          - metadata:
-              name: db
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: default
-              resources:
-                requests:
-                  storage: 5Gi
-          - metadata:
-              name: keys
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: default
-              resources:
-                requests:
-                  storage: 5Gi
-          - metadata:
-              name: logs
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: default
-              resources:
-                requests:
-                  storage: 5Gi
-          - metadata:
-              name: models
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: default
-              resources:
-                requests:
-                  storage: 5Gi
-  - name: instance-pvc-tmpl
-    inputs:
-      parameters:
-      - name: pvc-name
-    resource:
-      action: delete
-      manifest: |
-        apiVersion: v1
-        kind: PersistentVolumeClaim
-        metadata:
-          name: {{inputs.parameters.pvc-name}}-{{workflow.parameters.name}}-0
-  - name: slack-notify
-    container:
-      image: technosophos/slack-notify
-      command: [sh,-c]
-      args: ['SLACK_USERNAME=onepanel SLACK_TITLE="Your workspace is ready" SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd SLACK_MESSAGE="Your workspace is now running" ./slack-notify']
+          spec:
+            nodeSelector:
+              beta.kubernetes.io/instance-type: {{workflow.parameters.machine-type}}
+            containers:
+            - name: cvat-db
+              image: postgres:10-alpine
+              env:
+                - name: POSTGRES_USER
+                  value: root
+                - name: POSTGRES_DB
+                  value: cvat
+                - name: POSTGRES_HOST_AUTH_METHOD
+                  value: trust
+                - name: PGDATA
+                  value: /var/lib/postgresql/data
+              ports:
+              - containerPort: 5432
+                name: tcp
+              volumeMounts:
+                - name: db
+                  mountPath: /var/lib/postgresql
+            - name: cvat-redis
+              image: redis:4.0-alpine
+              ports:
+              - containerPort: 6379
+                name: tcp
+            - name: cvat
+              image: onepanel/cvat:v0.6.7
+              env:
+                - name: DJANGO_MODWSGI_EXTRA_ARGS
+                  value: ""
+                - name: ALLOWED_HOSTS
+                  value: '*'
+                - name: CVAT_REDIS_HOST
+                  value: localhost
+                - name: CVAT_POSTGRES_HOST
+                  value: localhost
+                - name: CVAT_SHARE_URL
+                  value: /home/django/data
+              ports:
+              - containerPort: 8080
+                name: http
+              volumeMounts:
+                - name: data
+                  mountPath: /home/django/data
+              volumeMounts:
+                - name: keys
+                  mountPath: /home/django/keys
+              volumeMounts:
+                - name: logs
+                  mountPath: /home/django/logs
+              volumeMounts:
+                - name: models
+                  mountPath: /home/django/models
+            - name: cvat-ui
+              image: onepanel/cvat-ui:v0.6.6
+              ports:
+              - containerPort: 80
+                name: http
+        volumeClaimTemplates:
+        - metadata:
+            name: data
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: {{workflow.parameters.volume}}Gi
+        - metadata:
+            name: db
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: 5Gi
+        - metadata:
+            name: keys
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: 5Gi
+        - metadata:
+            name: logs
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: 5Gi
+        - metadata:
+            name: models
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: 5Gi
+- name: instance-pvc-tmpl
+  inputs:
+    parameters:
+    - name: pvc-name
+  resource:
+    action: delete
+    manifest: |
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{inputs.parameters.pvc-name}}-{{workflow.parameters.name}}-0
+- name: slack-notify
+  container:
+    image: technosophos/slack-notify
+    command: [sh,-c]
+    args: ['SLACK_USERNAME=onepanel SLACK_TITLE="Your workspace is ready" SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd SLACK_MESSAGE="Your workspace is now running" ./slack-notify']
