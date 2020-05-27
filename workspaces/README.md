@@ -4,7 +4,7 @@ A brief description of each template
 
 ## cvat
 
-[CVAT]((https://github.com/opencv/cvat)) is a interactive video and image annotation tool for computer vision.
+[CVAT](https://github.com/opencv/cvat) is a interactive video and image annotation tool for computer vision.
 
 ## jupyterlab-and-vscode
 
