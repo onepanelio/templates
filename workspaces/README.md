@@ -1,6 +1,8 @@
 # Workspace Templates
 
-A brief description of each template
+These are example templates that can be used in [Onepanel](https://docs.onepanel.ai/)
+
+A brief description of each template follows.
 
 ## cvat
 
