@@ -1,4 +1,4 @@
-# Ubuntu Xfce4 Vnc
+# Ubuntu + Xfce4 + VNC
 
 This creates an Ubuntu workspace that you can access via VNC.
 
