@@ -1,0 +1,140 @@
+arguments:
+  parameters:
+  - name: source
+    value: https://github.com/onepanelio/Mask_RCNN.git
+  - name: dataset-path
+    value: datasets/test_05142020170720
+  - name: model-path
+    value: models/rush/cvat6-20
+  - name: extras
+    value: none
+  - name: task-name
+    value: test
+  - name: num-classes
+    value: 2
+  - name: stage-1-epochs
+    value: 1
+  - name: stage-2-epochs
+    value: 2
+  - name: stage-3-epochs
+    value: 3
+  - name: tf-image
+    value: tensorflow/tensorflow:1.13.1-py3
+  - displayName: Node pool
+    hint: Name of node pool or group
+    type: select.select
+    name: sys-node-pool
+    required: true
+    options:
+    - name: 'CPU: 2, RAM: 8GB'
+      value: Standard_D2s_v3
+    - name: 'CPU: 4, RAM: 16GB'
+      value: Standard_D4s_v3
+    - name: 'GPU: 1xK80, CPU: 6, RAM: 56GB'
+      value: Standard_NC6
+entrypoint: main
+templates:
+- dag:
+    tasks:
+    - name: train-model
+      template: tensorflow
+    - arguments:
+        artifacts:
+        - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
+          name: metrics
+        parameters:
+        - name: status
+          value: '{{tasks.train-model.status}}'
+      dependencies:
+      - train-model
+      name: notify-in-slack
+      template: slack-notify-success
+  name: main
+- container:
+    args:
+    - |
+      apt-get update \
+      && apt-get install -y git wget libglib2.0-0 libsm6 libxext6 libxrender-dev \
+      && pip install -r requirements.txt \
+      && git clone https://github.com/waleedka/coco \
+      && cd coco/PythonAPI \
+      && python setup.py build_ext install \
+      && rm -rf build \
+      && cd ../../ \
+      && wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5 \
+      && python setup.py install && ls \
+      && python samples/coco/cvat.py train --dataset=/mnt/data/datasets \
+        --model=workflow_maskrcnn --stage1_epochs={{workflow.parameters.stage-1-epochs}} \
+        --stage2_epochs={{workflow.parameters.stage-2-epochs}} \
+        --stage3_epochs={{workflow.parameters.stage-3-epochs}} \
+        --num_classes={{workflow.parameters.num-classes}} \
+        --extras="{{workflow.parameters.extras}}"  \
+      && cd /mnt/src/ \
+      && python prepare_dataset.py /mnt/data/datasets/annotations/instances_default.json
+    command:
+    - sh
+    - -c
+    image: '{{workflow.parameters.tf-image}}'
+    volumeMounts:
+    - mountPath: /mnt/data
+      name: data
+    - mountPath: /mnt/output
+      name: output
+    workingDir: /mnt/src
+  nodeSelector:
+    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+  inputs:
+    artifacts:
+    - name: data
+      path: /mnt/data/datasets/
+      s3:
+        key: '{{workflow.parameters.dataset-path}}'
+    - git:
+        repo: '{{workflow.parameters.source}}'
+        revision: "no-boto"
+      name: src
+      path: /mnt/src
+  name: tensorflow
+  outputs:
+    artifacts:
+    - name: model
+      optional: true
+      path: /mnt/output
+      s3:
+        key: '{{workflow.parameters.model-path}}'
+- container:
+    args:
+    - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
+      SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
+      SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
+    command:
+    - sh
+    - -c
+    image: technosophos/slack-notify
+  inputs:
+    artifacts:
+    - name: metrics
+      optional: true
+      path: /tmp/metrics.json
+    parameters:
+    - name: status
+  name: slack-notify-success
+volumeClaimTemplates:
+- metadata:
+    creationTimestamp: null
+    name: data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
+- metadata:
+    creationTimestamp: null
+    name: output
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
