@@ -1,0 +1,127 @@
+arguments:
+  parameters:
+  - name: name
+    value: theia
+    type: input.text
+  - name: action
+    value: apply
+    type: input.hidden
+  - name: machine-type
+    type: select.select
+    value: Standard_D4s_v3
+    options:
+    - name: Standard_D4s_v3
+      value: Standard_D4s_v3
+  - name: volume
+    value: 10
+    type: input.number
+  - name: host
+    value: <host>
+    type: input.hidden
+  - name: replicas
+    value: 1
+    type: input.hidden
+entrypoint: instance-tmpl
+templates:
+- name: instance-tmpl
+  dag:
+      tasks:
+      - name: service
+        template: instance-service-tmpl
+      - name: virtual-service
+        dependencies: [service]
+        template: instance-virtual-service-tmpl
+      - name: statefulset
+        dependencies: [virtual-service]
+        template: instance-statefulset-tmpl
+      - name: pvc
+        template: instance-pvc-tmpl
+        dependencies: [statefulset]
+        when: "{{workflow.parameters.action}} == delete"
+- name: instance-service-tmpl
+  resource:
+    action: "{{workflow.parameters.action}}"
+    manifest: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {{workflow.parameters.name}}
+      spec:
+        ports:
+        - name: http
+          port: 80
+          protocol: TCP
+          targetPort: 8080
+        selector:
+          instanceUID: {{workflow.parameters.name}}
+        type: ClusterIP
+- name: instance-virtual-service-tmpl
+  resource:
+    action: "{{workflow.parameters.action}}"
+    manifest: |
+      apiVersion: networking.istio.io/v1alpha3
+      kind: VirtualService
+      metadata:
+        name: {{workflow.parameters.name}}
+      spec:
+        hosts:
+        - {{workflow.parameters.name}}-{{workflow.namespace}}.{{workflow.parameters.host}}
+        gateways:
+        - istio-system/ingressgateway
+        http:
+        - match:
+          - uri:
+              prefix: /
+          route:
+          - destination:
+              port:
+                number: 80
+              host: {{workflow.parameters.name}}
+- name: instance-statefulset-tmpl
+  resource:
+    action: "{{workflow.parameters.action}}"
+    manifest: |
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: {{workflow.parameters.name}}
+      spec:
+        replicas: {{workflow.parameters.replicas}}
+        serviceName: {{workflow.parameters.name}}
+        selector:
+          matchLabels:
+            instanceUID: {{workflow.parameters.name}}
+        template:
+          metadata:
+            labels:
+              instanceUID: {{workflow.parameters.name}}
+          spec:
+            nodeSelector:
+              beta.kubernetes.io/instance-type: {{workflow.parameters.machine-type}}
+            containers:
+            - name: main
+              image: codercom/code-server:3.0.2
+              args: ["--auth", "none"]
+              ports:
+              - containerPort: 80
+                name: http
+              volumeMounts:
+                - name: vol1
+                  mountPath: /home/coder
+        volumeClaimTemplates:
+        - metadata:
+            name: vol1
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: default
+            resources:
+              requests:
+                storage: {{workflow.parameters.volume}}Gi
+- name: instance-pvc-tmpl
+  resource:
+    action: delete
+    manifest: |
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: vol1-{{workflow.parameters.name}}-0
