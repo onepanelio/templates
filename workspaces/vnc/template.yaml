@@ -1,6 +1,6 @@
 containers:
 - name: ubuntu
-  image: onepanel/vnc:v0.2.0
+  image: onepanel/vnc:v0.3.0
   env:
   - name: VNC_PASSWORDLESS
     value: 'true'
