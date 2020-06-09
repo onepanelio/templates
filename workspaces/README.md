@@ -20,11 +20,11 @@ This template includes both JupyterLab and VSCode running on the same machine.
 
 [Node-RED](https://nodered.org/) is a tool for wiring together hardware devices, APIs and online services. Use the editor to write together flows using a wide range of nodes.
 
-## ubuntu-xfce4-vnc (alpha)
+## vnc (alpha)
 
-A working ubuntu environment that you can interact with visually - launch a terminal, web browser, whatever you want.
+A working Ubuntu environment that you can interact with visually - launch a terminal, web browser, etc.
 
-[unbtu-xfce4](https://hub.docker.com/r/consol/ubuntu-xfce-vnc/)
+[unbtu-xfce4](https://hub.docker.com/r/consol/\vnc/)
 
 ## vscode
 
