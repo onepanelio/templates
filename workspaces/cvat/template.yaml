@@ -46,6 +46,8 @@ containers:
     mountPath: /home/django/logs
   - name: models
     mountPath: /home/django/models
+  - name: share
+    mountPath: /home/django/share
 - name: cvat-ui
   image: onepanel/cvat-ui:v0.7.0
   ports:
