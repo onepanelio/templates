@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  filesyncer:
+    build:
+      context: .
+      dockerfile: Dockerfile.fs
+    command: python3 main.py
+    volumes:
+      - share:/mnt/share
+volumes:
+  share:
+    driver_opts:
+      type: none
+      device: /mnt/share
+      o: bind
