@@ -42,10 +42,10 @@ def new_files(bucket, dir, local_dir):
 def run_sync():
     wlogger.info(f"Running run_sync function, current length {LAST_LEN_KEYS}")
     # if there are new files on s3 then run sync command
-    bucket = os.getenv('SYNCER_S3_BUCKET_NAME','cnas-re.uog.onepanel.io')
-    dir = os.getenv('S3_SYNC_PATH','')
-    local_dir = os.getenv('LOCAL_SYNC_PATH','/mnt/share/')
-    direction = os.getenv('SYNC_DIRECTION', 'up') # up - upload to s3, down - download from s3, or both
+    bucket = os.getenv('SYNC_S3_BUCKET_NAME','cnas-re.uog.onepanel.io')
+    dir = os.getenv('SYNC_S3_PATH','')
+    local_dir = os.getenv('SYNC_LOCAL_PATH','/mnt/share/')
+    direction = os.getenv('SYNC_DIRECTION', 'down') # up - upload to s3, down - download from s3, or both
     if new_files(bucket, dir, local_dir):
         #run cli commands
         if direction == "down":
@@ -61,7 +61,7 @@ def run_sync():
 if __name__ == "__main__":
     wlogger.info("Starting S3 File Watcher")
     #run every 15 mins by default
-    delay = os.getenv('DELAY', 900)
+    delay = os.getenv('SYNC_DELAY', 900)
     while True:
         run_sync()
         wlogger.info(f"Sleeping for {delay} seconds")
