@@ -45,6 +45,8 @@ def run_sync():
     bucket = os.getenv('SYNC_S3_BUCKET_NAME','cnas-re.uog.onepanel.io')
     dir = os.getenv('SYNC_S3_PATH','')
     local_dir = os.getenv('SYNC_LOCAL_PATH','/mnt/share/')
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
     direction = os.getenv('SYNC_DIRECTION', 'down') # up - upload to s3, down - download from s3, or both
     if new_files(bucket, dir, local_dir):
         #run cli commands
@@ -60,6 +62,10 @@ def run_sync():
 
 if __name__ == "__main__":
     wlogger.info("Starting S3 File Watcher")
+    #configure aws cli
+    os.system(f"aws configure set aws_access_key_id {os.getenv('AWS_ACCESS_KEY_ID')}")
+    os.system(f"aws configure set aws_secret_access_key {os.getenv('AWS_SECRET_ACCESS_KEY')}")
+    os.system("aws configure set region us-west-2")
     #run every 15 mins by default
     delay = os.getenv('SYNC_DELAY', 900)
     while True:
