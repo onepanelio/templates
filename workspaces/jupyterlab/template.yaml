@@ -3,19 +3,28 @@ containers:
 - name: jupyterlab-tensorflow
   image: jupyter/tensorflow-notebook
   command: [start.sh, jupyter]
+  workingDir: /data
   env:
     - name: tornado
       value: "{ 'headers': { 'Content-Security-Policy': \"frame-ancestors * 'self'\" }  }"
-  args: 
+    - name: GRANT_SUDO
+      value: 1
+    - name: CHOWN_EXTRA
+      value: '/data'
+    - name: CHOWN_EXTRA_OPTS
+      value: '-R'
+  securityContext:
+    runAsUser: 0
+    allowPrivilegeEscalation: false
+  args:
     - lab
-    - --LabApp.token='' 
+    - --LabApp.token=''
     - --LabApp.allow_remote_access=True
     - --LabApp.allow_origin="*"
     - --LabApp.disable_check_xsrf=True
     - --LabApp.trust_xheaders=True
-    - --LabApp.tornado_settings=$(tornado) 
-    - --notebook-dir='/data'
-
+    - --LabApp.tornado_settings=$(tornado)
+    - --NotebookApp.notebook_dir='/data'
   ports:
   - containerPort: 8888
     name: jupyterlab
@@ -39,16 +48,16 @@ routes:
   - destination:
       port:
         number: 80
-# DAG Workflow to be executed once a Workspace action completes (optional)        
-#postExecutionWorkflow:
-#  entrypoint: main
-#  templates:
-#  - name: main
-#    dag:
-#       tasks:
-#       - name: slack-notify
-#         template: slack-notify
-#  -  name: slack-notify
+# DAG Workflow to be executed once a Workspace action completes
+# postExecutionWorkflow:
+#   entrypoint: main
+#   templates:
+#   - name: main
+#     dag:
+#        tasks:
+#        - name: slack-notify
+#          template: slack-notify
+#   - name: slack-notify
 #     container:
 #       image: technosophos/slack-notify
 #       args:
