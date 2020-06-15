@@ -45,9 +45,17 @@ def run_sync():
     bucket = os.getenv('SYNCER_S3_BUCKET_NAME','cnas-re.uog.onepanel.io')
     dir = os.getenv('S3_SYNC_PATH','')
     local_dir = os.getenv('LOCAL_SYNC_PATH','/mnt/share/')
+    direction = os.getenv('SYNC_DIRECTION', 'up') # up - upload to s3, down - download from s3, or both
     if new_files(bucket, dir, local_dir):
-        #run cli command
-        os.system(f"aws s3 sync s3://{bucket} '{local_dir}'")
+        #run cli commands
+        if direction == "down":
+            os.system(f"aws s3 sync s3://{bucket} '{local_dir}'")
+        elif direction == "up":
+            os.system(f"aws s3 sync '{local_dir}' s3://{bucket}")
+        else:
+            os.system(f"aws s3 sync s3://{bucket} '{local_dir}'")
+            os.system(f"aws s3 sync '{local_dir}' s3://{bucket}")
+
     wlogger.info("run_sync completed")
 
 if __name__ == "__main__":
