@@ -1,9 +1,25 @@
+arguments:
+  parameters:
+  # parameter screen-resolution allows users to select screen resolution
+  - name: screen-resolution
+    value: 1680x1050
+    type: select.select
+    displayName: Screen Resolution
+    options:
+    - name: 1280x1024
+      value: 1280x1024
+    - name: 1680x1050
+      value: 1680x1050
+    - name: 2880x1800
+      value: 2880x1800
 containers:
 - name: ubuntu
   image: onepanel/vnc:v0.3.0
   env:
   - name: VNC_PASSWORDLESS
-    value: 'true'
+    value: true
+  - name: VNC_RESOLUTION
+    value: '{{workflow.parameters.screen-resolution}}'
   ports:
   - containerPort: 6901
     name: vnc
