@@ -1,0 +1,50 @@
+arguments:
+  parameters:
+  # parameter image-variant allows users to select specific programming language Docker image and version
+  - name: image-variant
+    value: cpp
+    type: select.select
+    displayName: Image Variant
+    options:
+    - name: theia C++
+      value: cpp
+    - name: theia PHP
+      value: php
+    - name: theia Go
+      value: go:1.3.0-next.c80f3fec
+    - name: theia full version
+      value: full
+    - name: theia Dart
+      value: dart
+    - name: theia Java
+      value: java:1.3.0-next.c80f3fec
+    - name: theia Python
+      value: python
+    - name: theia Rust
+      value: rust:1.3.0-next.2f648281
+    - name: theia Swift
+      value: swift
+
+
+containers:
+- name: theia-ide
+  image: theiaide/theia-{{workflow.parameters.image-variant}}
+  ports:
+  - containerPort: 3000
+    name: http
+  volumeMounts:
+  - name: data
+    mountPath: /home/coder
+ports:
+- name: theia
+  port: 80
+  protocol: TCP
+  targetPort: 3000 
+routes:
+- match:
+  - uri:
+      prefix: /
+  route:
+  - destination:
+      port:
+        number: 80

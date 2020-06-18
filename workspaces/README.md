@@ -29,3 +29,8 @@ A working Ubuntu environment that you can interact with visually - launch a term
 ## vscode
 
 [Visual Studio Code](https://code.visualstudio.com) is a lightweight but powerful source code editor which has support for just about everything. 
+
+
+## Theia 
+
+[Eclipse Theia](https://theia-ide.org/) is an extensible platform to develop multi-language Cloud & Desktop IDEs with state-of-the-art web technologies.
