@@ -12,6 +12,8 @@ arguments:
     value: test
   - name: num-classes
     value: 2
+  - name: ref-model-path
+    value: base-models/maskrcnn
   - name: stage-1-epochs
     value: 1
   - name: stage-2-epochs
@@ -24,6 +26,7 @@ arguments:
     hint: Name of node pool or group
     type: select.select
     name: sys-node-pool
+    value: Standard_D4s_v3
     required: true
     options:
     - name: 'CPU: 2, RAM: 8GB'
@@ -89,6 +92,10 @@ templates:
       path: /mnt/data/datasets/
       s3:
         key: '{{workflow.parameters.dataset-path}}'
+    - name: models
+      path: /mnt/data/models/
+      s3:
+        key: '{{workflow.parameters.ref-model-path}}'
     - git:
         repo: '{{workflow.parameters.source}}'
         revision: "no-boto"
