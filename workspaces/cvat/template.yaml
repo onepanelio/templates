@@ -1,99 +1,145 @@
-containers:
-- name: cvat-db
-  image: postgres:10-alpine
-  env:
-  - name: POSTGRES_USER
-    value: root
-  - name: POSTGRES_DB
-    value: cvat
-  - name: POSTGRES_HOST_AUTH_METHOD
-    value: trust
-  - name: PGDATA
-    value: /var/lib/psql/data
-  ports:
-  - containerPort: 5432
-    name: tcp
-  volumeMounts:
-  - name: db
-    mountPath: /var/lib/psql
-- name: cvat-redis
-  image: redis:4.0-alpine
-  ports:
-  - containerPort: 6379
-    name: tcp
-- name: cvat
-  image: onepanel/cvat:v0.7.0
-  env:
-  - name: DJANGO_MODWSGI_EXTRA_ARGS
-    value: ""
-  - name: ALLOWED_HOSTS
-    value: '*'
-  - name: CVAT_REDIS_HOST
-    value: localhost
-  - name: CVAT_POSTGRES_HOST
-    value: localhost
-  - name: CVAT_SHARE_URL
-    value: /home/django/data
-  ports:
-  - containerPort: 8080
-    name: http
-  volumeMounts:
-  - name: data
-    mountPath: /home/django/data
-  - name: keys
-    mountPath: /home/django/keys
-  - name: logs
-    mountPath: /home/django/logs
-  - name: models
-    mountPath: /home/django/models
-  - name: share
-    mountPath: /home/django/share
-- name: cvat-ui
-  image: onepanel/cvat-ui:v0.7.0
-  ports:
-  - containerPort: 80
-    name: http
-ports:
-- name: cvat-ui
-  port: 80
-  protocol: TCP
-  targetPort: 80
-- name: cvat
-  port: 8080
-  protocol: TCP
-  targetPort: 8080
-routes:
-- match:
-  - uri:
-      regex: /api/.*|/git/.*|/tensorflow/.*|/auto_annotation/.*|/analytics/.*|/static/.*|/admin/.*|/documentation/.*|/dextr/.*|/reid/.*
-  - queryParams:
-      id:
-        regex: \d+.*
-  route:
-  - destination:
-      port:
-        number: 8080
-- match:
-  - uri:
-      prefix: /
-  route:
-  - destination:
-      port:
-        number: 80
-# DAG Workflow to be executed once a Workspace action completes (optional)        
-#postExecutionWorkflow:
-#  entrypoint: main
-#  templates:
-#  - name: main
-#    dag:
-#       tasks:
-#       - name: slack-notify
-#         template: slack-notify
-#  -  name: slack-notify
-#     container:
-#       image: technosophos/slack-notify
-#       args:
-#       - SLACK_USERNAME=onepanel SLACK_TITLE="Your workspace is ready" SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd SLACK_MESSAGE="Your workspace is now running" ./slack-notify
-#       command:
-#       - sh
-#       - -c
+arguments:
+  parameters:
+  - name: source
+    value: https://github.com/tensorflow/models.git
+  - name: trainingsource
+    value: https://github.com/onepanelio/cvat-training.git
+  - name: revision
+    value: v1.13.0
+  - name: dataset-path
+    value: datasets/od_05142020190720
+  - name: model-path
+    value: models/test_tf
+  - name: ref-model
+    value: frcnn-res50-coco
+  - name: bucket-name
+    value: mlpipeline.onepanel.io
+  - name: extras
+    value: none
+  - name: ref-model-path
+    value: base-models/frcnn-res50-coco
+  - name: num-classes
+    value: '81'
+  - name: task-name
+    value: test
+  - name: tf-image
+    value: tensorflow/tensorflow:1.13.1-py3
+  - displayName: Node pool
+    hint: Name of node pool or group
+    type: select.select
+    name: sys-node-pool
+    value: Standard_D4s_v3
+    required: true
+    options:
+    - name: 'CPU: 2, RAM: 8GB'
+      value: Standard_D2s_v3
+    - name: 'CPU: 4, RAM: 16GB'
+      value: Standard_D4s_v3
+    - name: 'GPU: 1xK80, CPU: 6, RAM: 56GB'
+      value: Standard_NC6
+entrypoint: main
+templates:
+- dag:
+    tasks:
+    - name: train-model
+      template: tensorflow
+    - arguments:
+        artifacts:
+        - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
+          name: metrics
+        parameters:
+        - name: status
+          value: '{{tasks.train-model.status}}'
+      dependencies:
+      - train-model
+      name: notify-in-slack
+      template: slack-notify-success
+  name: main
+- container:
+    resources:
+      requests:
+        memory: '10Gi'
+    args:
+    - |
+      apt-get update && \
+      apt-get install -y python3-pip git wget unzip libglib2.0-0 libsm6 libxext6 libxrender-dev && \
+      pip install pillow lxml Cython contextlib2 jupyter matplotlib numpy scipy boto3 && \
+      cd /mnt/src/tf/research && \
+      export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim && \
+      cd /mnt/src/train && \
+      python convert_workflow.py {{workflow.parameters.extras}},dataset=/mnt/data/datasets,model={{workflow.parameters.ref-model}},num_classes={{workflow.parameters.num-classes}},task_name={{workflow.parameters.task-name}}
+    command:
+    - sh
+    - -c
+    image: '{{workflow.parameters.tf-image}}'
+    volumeMounts:
+    - mountPath: /mnt/data
+      name: data
+    - mountPath: /mnt/output
+      name: output
+    workingDir: /mnt/src
+  nodeSelector:
+    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+  inputs:
+    artifacts:
+    - name: data
+      path: /mnt/data/datasets/
+      s3:
+        key: '{{workflow.parameters.dataset-path}}'
+    - name: models
+      path: /mnt/data/models/
+      s3:
+        key: '{{workflow.parameters.ref-model-path}}'
+    - git:
+        repo: '{{workflow.parameters.source}}'
+        revision: '{{workflow.parameters.revision}}'
+      name: src
+      path: /mnt/src/tf
+    - git:
+        repo: '{{workflow.parameters.trainingsource}}'
+      name: tsrc
+      path: /mnt/src/train
+  name: tensorflow
+  outputs:
+    artifacts:
+    - name: model
+      optional: true
+      path: /mnt/output
+      s3:
+        key: '{{workflow.parameters.model-path}}'
+- container:
+    args:
+    - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
+      SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
+      SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
+    command:
+    - sh
+    - -c
+    image: technosophos/slack-notify
+  inputs:
+    artifacts:
+    - name: metrics
+      optional: true
+      path: /tmp/metrics.json
+    parameters:
+    - name: status
+  name: slack-notify-success
+volumeClaimTemplates:
+- metadata:
+    creationTimestamp: null
+    name: data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
+- metadata:
+    creationTimestamp: null
+    name: output
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
