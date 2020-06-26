@@ -12,8 +12,12 @@ arguments:
     value: models/test_tf
   - name: ref-model
     value: frcnn-res50-coco
+  - name: bucket-name
+    value: mlpipeline.onepanel.io
   - name: extras
     value: none
+  - name: ref-model-path
+    value: base-models/frcnn-res50-coco
   - name: num-classes
     value: '81'
   - name: task-name
@@ -24,6 +28,7 @@ arguments:
     hint: Name of node pool or group
     type: select.select
     name: sys-node-pool
+    value: Standard_D4s_v3
     required: true
     options:
     - name: 'CPU: 2, RAM: 8GB'
@@ -51,6 +56,9 @@ templates:
       template: slack-notify-success
   name: main
 - container:
+    resources:
+      requests:
+        memory: '10Gi'
     args:
     - |
       apt-get update && \
@@ -70,13 +78,18 @@ templates:
     - mountPath: /mnt/output
       name: output
     workingDir: /mnt/src
+  nodeSelector:
+    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
   inputs:
     artifacts:
     - name: data
       path: /mnt/data/datasets/
       s3:
         key: '{{workflow.parameters.dataset-path}}'
-       
+    - name: models
+      path: /mnt/data/models/
+      s3:
+        key: '{{workflow.parameters.ref-model-path}}'
     - git:
         repo: '{{workflow.parameters.source}}'
         revision: '{{workflow.parameters.revision}}'
@@ -120,7 +133,7 @@ volumeClaimTemplates:
     - ReadWriteOnce
     resources:
       requests:
-        storage: 100Gi
+        storage: 200Gi
 - metadata:
     creationTimestamp: null
     name: output
@@ -129,4 +142,4 @@ volumeClaimTemplates:
     - ReadWriteOnce
     resources:
       requests:
-        storage: 100Gi
+        storage: 200Gi
