@@ -23,7 +23,7 @@ containers:
   - containerPort: 6379
     name: tcp
 - name: cvat
-  image: onepanel/cvat:v0.7.6
+  image: onepanel/cvat:v0.7.10-stable
   env:
   - name: DJANGO_MODWSGI_EXTRA_ARGS
     value: ""
@@ -50,7 +50,7 @@ containers:
   - name: share
     mountPath: /home/django/share
 - name: cvat-ui
-  image: onepanel/cvat-ui:v0.7.5
+  image: onepanel/cvat-ui:v0.7.10-stable
   ports:
   - containerPort: 80
     name: http
