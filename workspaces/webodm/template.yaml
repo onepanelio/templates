@@ -13,7 +13,7 @@ containers:
       mountPath: /var/lib/psql
 
   - name: webapp
-    image: islamheggy/onepanel-webodm-webapp
+    image: islamheggy/onepanel-webodm-webapp 
     volumeMounts:
     - name: media
       mountPath: /webodm/app/media
@@ -25,6 +25,8 @@ containers:
     - containerPort: 8000
       name: http
     env:
+    - name: WO_DEFAULT_NODES
+      value: 1    
     - name: WO_PORT
       value: 8000
     - name: WO_HOST
@@ -35,6 +37,12 @@ containers:
       value: NO
     - name: WO_BROKER
       value: redis://localhost
+
+  - name: node-odm 
+    image: opendronemap/nodeodm
+
+    ports:
+    - containerPort: 3000
 
   - name: broker
     image: redis
