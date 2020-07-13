@@ -3,9 +3,9 @@ arguments:
   - name: source
     value: https://github.com/onepanelio/Mask_RCNN.git
   - name: dataset-path
-    value: datasets/test_05142020170720
+    value: datasets/crb/CVAT-UoG-DEVELOPMENT/datasets/temp-delete_coco_06262020212811
   - name: model-path
-    value: models/rush/cvat6-20
+    value: datasets/crb/CVAT-UoG-DEVELOPMENT/models/temp-delete_maskrcnn_06262020212811/
   - name: extras
     value: none
   - name: task-name
@@ -13,7 +13,7 @@ arguments:
   - name: num-classes
     value: 2
   - name: ref-model-path
-    value: base-models/maskrcnn
+    value: ''
   - name: stage-1-epochs
     value: 1
   - name: stage-2-epochs
@@ -41,18 +41,18 @@ templates:
     tasks:
     - name: train-model
       template: tensorflow
-# Uncomment the lines below if you want to send Slack notifications
-#    - arguments:
-#        artifacts:
-#        - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
-#          name: metrics
-#        parameters:
-#        - name: status
-#          value: '{{tasks.train-model.status}}'
-#      dependencies:
-#      - train-model
-#      name: notify-in-slack
-#      template: slack-notify-success
+    # Uncomment following lines to get Slack notifications
+    # - arguments:
+    #     artifacts:
+    #     - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
+    #       name: metrics
+    #     parameters:
+    #     - name: status
+    #       value: '{{tasks.train-model.status}}'
+    #   dependencies:
+    #   - train-model
+    #   name: notify-in-slack
+    #   template: slack-notify-success
   name: main
 - container:
     args:
@@ -60,6 +60,7 @@ templates:
       apt-get update \
       && apt-get install -y git wget libglib2.0-0 libsm6 libxext6 libxrender-dev \
       && pip install -r requirements.txt \
+      && pip install boto3 \
       && git clone https://github.com/waleedka/coco \
       && cd coco/PythonAPI \
       && python setup.py build_ext install \
@@ -73,6 +74,7 @@ templates:
         --stage3_epochs={{workflow.parameters.stage-3-epochs}} \
         --num_classes={{workflow.parameters.num-classes}} \
         --extras="{{workflow.parameters.extras}}"  \
+        --ref_model_path="{{workflow.parameters.ref-model-path}}"  \
       && cd /mnt/src/ \
       && python prepare_dataset.py /mnt/data/datasets/annotations/instances_default.json
     command:
@@ -85,18 +87,12 @@ templates:
     - mountPath: /mnt/output
       name: output
     workingDir: /mnt/src
-  nodeSelector:
-    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
   inputs:
     artifacts:
     - name: data
       path: /mnt/data/datasets/
       s3:
         key: '{{workflow.parameters.dataset-path}}'
-    - name: models
-      path: /mnt/data/models/
-      s3:
-        key: '{{workflow.parameters.ref-model-path}}'
     - git:
         repo: '{{workflow.parameters.source}}'
         revision: "no-boto"
@@ -110,24 +106,23 @@ templates:
       path: /mnt/output
       s3:
         key: '{{workflow.parameters.model-path}}'
-# Uncomment the lines below if you want to send Slack notifications
-#- container:
-#    args:
-#    - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
-#      SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
-#      SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
-#    command:
-#    - sh
-#    - -c
-#    image: technosophos/slack-notify
-#  inputs:
-#    artifacts:
-#    - name: metrics
-#      optional: true
-#      path: /tmp/metrics.json
-#    parameters:
-#    - name: status
-#  name: slack-notify-success
+# - container:
+#     args:
+#     - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
+#       SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
+#       SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
+#     command:
+#     - sh
+#     - -c
+#     image: technosophos/slack-notify
+#   inputs:
+#     artifacts:
+#     - name: metrics
+#       optional: true
+#       path: /tmp/metrics.json
+#     parameters:
+#     - name: status
+#   name: slack-notify-success
 volumeClaimTemplates:
 - metadata:
     creationTimestamp: null
