@@ -1,0 +1,78 @@
+# Docker containers that are part of the Workspace
+containers:
+  - name: db
+    image: opendronemap/webodm_db
+    env:
+    - name: PGDATA
+      value: /var/lib/psql/data      
+    ports:
+    - containerPort: 5432
+      name: tcp
+    volumeMounts:
+    - name: data
+      mountPath: /var/lib/psql
+
+  - name: webapp
+    image: islamheggy/onepanel-webodm-webapp 
+    volumeMounts:
+    - name: media
+      mountPath: /webodm/app/media
+    command: ['/bin/bash']
+    args:
+      - -c
+      - "chmod +x /webodm/*.sh && /webodm/wait-for-postgres.sh localhost /webodm/wait-for-it.sh -t 0 localhost:6379 -- /webodm/start.sh"
+    ports:
+    - containerPort: 8000
+      name: http
+    env:
+    - name: WO_DEFAULT_NODES
+      value: 1    
+    - name: WO_PORT
+      value: 8000
+    - name: WO_HOST
+      value: localhost
+    - name: WO_DEV
+      value: NO
+    - name: WO_DEBUG
+      value: NO
+    - name: WO_BROKER
+      value: redis://localhost
+
+  - name: node-odm 
+    image: opendronemap/nodeodm
+
+    ports:
+    - containerPort: 3000
+
+  - name: broker
+    image: redis
+    ports:
+    - containerPort: 6379
+      name: tcp
+  - name: worker
+    image: islamheggy/onepanel-webodm-webapp
+    volumeMounts:
+    - name: media
+      mountPath: /webodm/app/media
+    command:  ['/bin/bash']
+    args:
+      - -c
+      - "/webodm/wait-for-postgres.sh localhost /webodm/wait-for-it.sh -t 0 localhost:6379 -- /webodm/wait-for-it.sh -t 0 localhost:8000 -- /webodm/worker.sh start"
+    env:
+    - name: WO_DEBUG
+      value: NO      
+    - name: WO_BROKER
+      value: "redis://localhost"
+ports:
+  - name: webodm-frontend
+    port: 80
+    protocol: TCP
+    targetPort: 8000 
+routes:
+    - match:
+      - uri:
+          prefix: /
+      route:
+      - destination:
+          port:
+            number: 80

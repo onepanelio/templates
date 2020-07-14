@@ -24,8 +24,6 @@ This template includes both JupyterLab and VSCode running on the same machine.
 
 A working Ubuntu environment that you can interact with visually - launch a terminal, web browser, etc.
 
-[unbtu-xfce4](https://hub.docker.com/r/consol/\vnc/)
-
 ## vscode
 
 [Visual Studio Code](https://code.visualstudio.com) is a lightweight but powerful source code editor which has support for just about everything. 
@@ -34,3 +32,9 @@ A working Ubuntu environment that you can interact with visually - launch a term
 ## Theia 
 
 [Eclipse Theia](https://theia-ide.org/) is an extensible platform to develop multi-language Cloud & Desktop IDEs with state-of-the-art web technologies.
+
+
+## WebODM
+
+
+[WebODM](https://www.opendronemap.org/webodm/) is a commercial grade software for drone image processing. Generate georeferenced maps, point clouds, elevation models and textured 3D models from aerial images
