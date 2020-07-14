@@ -72,12 +72,13 @@ containers:
   ports:
   - containerPort: 80
     name: http
-- name: filesyncer
-  image: onepanel/filesyncer:v0.0.4
-  command: ['python3', 'main.py']
-  volumeMounts:
-  - name: share
-    mountPath: /mnt/share
+# Uncomment following lines to enable S3 file syncer
+# - name: filesyncer
+#   image: onepanel/filesyncer:v0.0.4
+#   command: ['python3', 'main.py']
+#   volumeMounts:
+#   - name: share
+#     mountPath: /mnt/share
   # containers for CVAT analytics
   # can be commented if you don't want analytics
 - name: cvat-elasticsearch
