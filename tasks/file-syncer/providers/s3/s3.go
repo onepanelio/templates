@@ -2,23 +2,16 @@ package s3
 
 import (
 	"github.com/onepanelio/templates/tasks/file-syncer/util"
-	"log"
-	"os"
 	"os/exec"
 )
 
-func Upload() {
-	cmd := exec.Command("aws", "s3", "sync", util.Path, util.StorageURI)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		log.Println(err)
+func Sync() {
+	var cmd *exec.Cmd
+	if util.Direction == "down" {
+		cmd = util.Command("aws", "s3", "sync", "--delete", util.StorageURI, util.Path)
 	}
-}
-
-func Download() {
-	cmd := exec.Command("aws", "s3", "sync", util.StorageURI, util.Path)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		log.Println(err)
+	if util.Direction == "up"  {
+		cmd = util.Command("aws", "s3", "sync", "--delete", util.Path, util.StorageURI)
 	}
+	cmd.Run()
 }

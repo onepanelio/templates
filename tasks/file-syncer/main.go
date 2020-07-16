@@ -12,55 +12,46 @@ func init() {
 	flag.StringVar(&util.Provider, "provider", "", "Storage provider: s3 or gcs")
 	flag.StringVar(&util.Path, "path", "", "Path to local directory")
 	flag.StringVar(&util.StorageURI, "storage-uri", "", "Storage URI, example: s3://<bucket-name>")
-	flag.StringVar(&util.Direction, "direction", "", "Sync direction: up, down, both")
+	flag.StringVar(&util.Direction, "direction", "", "Sync direction: up or down")
 
 	flag.Parse()
 }
 
 func main() {
-	provider := util.Provider
-	if provider == "" {
-		provider = util.Getenv("FS_STORAGE_PROVIDER", "")
+	if util.Provider == "" {
+		util.Provider = util.Getenv("FS_STORAGE_PROVIDER", "")
 	}
-	if provider == "" {
+	if util.Provider == "" {
 		log.Println("No storage provider was set, defaulting to s3.")
 	}
 
-	direction := util.Direction
-	if direction == "" {
-		direction = util.Getenv("FS_STORAGE_URI", "both")
+	if util.Direction == "" {
+		util.Direction = util.Getenv("FS_DIRECTION", "")
 	}
-	if direction == "" {
-		log.Println("No sync direction was set, defaulting to 'both'.")
+	if util.Direction == "" {
+		log.Fatalln("Direction is required")
 	}
 
-	path := util.Path
-	if path == "" {
-		path = util.Getenv("FS_PATH", "")
+	if util.Path == "" {
+		util.Path = util.Getenv("FS_PATH", "")
 	}
-	if path == "" {
+	if util.Path == "" {
 		log.Fatalln("Path is required")
 	}
 
-	storageURI := util.StorageURI
-	if storageURI == "" {
-		storageURI = util.Getenv("FS_STORAGE_URI", "")
+	if util.StorageURI == "" {
+		util.StorageURI = util.Getenv("FS_STORAGE_URI", "")
 	}
-	if storageURI == "" {
+	if util.StorageURI == "" {
 		log.Fatalln("Storage URI is required")
 	}
 
 	c := cron.New()
-	switch provider {
+	switch util.Provider {
 	case "s3":
 		fallthrough
 	default:
-		if direction == "up" || direction == "both" {
-			c.AddFunc("@every 5s", s3.Upload)
-		}
-		if direction == "down" || direction == "both" {
-			c.AddFunc("@every 5s", s3.Download)
-		}
+		c.AddFunc("@every 5s", s3.Sync)
 	}
 	c.Run()
 }

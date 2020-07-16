@@ -1,6 +1,9 @@
 package util
 
-import "os"
+import (
+	"os"
+	"os/exec"
+)
 
 var (
 	Provider	string
@@ -16,4 +19,12 @@ func Getenv(key, value string) string {
 	}
 
 	return env
+}
+
+func Command(name string, arg ...string) *exec.Cmd {
+	cmd := exec.Command(name, arg...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd
 }

@@ -1,6 +1,7 @@
 FROM python:3.6.11-alpine3.12
 
 ENV GLIBC_VER=2.31-r0
+ENV PATH="/go/bin:${PATH}"
 
 # install glibc compatibility for alpine
 # install AWS CLI
@@ -28,7 +29,10 @@ RUN apk --no-cache add \
     && rm glibc-bin-${GLIBC_VER}.apk \
     && rm -rf /var/cache/apk/*
 
-# install gcloud SDK
-RUN pip install gsutil
+WORKDIR /go/src
+COPY . .
+RUN apk add --no-cache go \
+    && mkdir -p /go/bin \
+    && go build -o /go/bin/file-syncer
 
-    
+ENTRYPOINT ["file-syncer"]
