@@ -13,7 +13,7 @@ Currently supports:
 
 `file-syncer` is meant to run in Onepanel as a sidecar container. 
 
-You can also run it as via `docker` as follows:
+You can also run it via `docker` as follows:
 
 ```bash
 # s3
