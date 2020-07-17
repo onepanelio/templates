@@ -118,6 +118,8 @@ templates:
     - mountPath: /mnt/output
       name: output
     workingDir: /mnt/src
+  nodeSelector:
+    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
   inputs:
     artifacts:
     - name: data
