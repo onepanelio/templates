@@ -6,10 +6,16 @@ import (
 )
 
 var (
-	Provider	string
-	Path 		string
-	StorageURI 	string
-	Direction	string
+	Provider string
+	Path     string
+	Bucket   string
+	Prefix   string
+	Action   string
+)
+
+const (
+	ActionUpload = "upload"
+	ActionDownload = "download"
 )
 
 func Getenv(key, value string) string {
