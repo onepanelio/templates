@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/onepanelio/templates/tasks/file-syncer/providers/az"
 	"github.com/onepanelio/templates/tasks/file-syncer/providers/gcs"
 	"github.com/onepanelio/templates/tasks/file-syncer/providers/s3"
 	"github.com/onepanelio/templates/tasks/file-syncer/util"
@@ -24,10 +25,10 @@ func main() {
 	flags.Parse(os.Args[2:])
 
 	if util.Provider == "" {
-		util.Provider = util.Getenv("FS_STORAGE_PROVIDER", "")
+		util.Provider = util.Getenv("FS_PROVIDER", "")
 	}
 	if util.Provider == "" {
-		log.Println("No storage provider was set, defaulting to s3.")
+		log.Println("No provider was set, defaulting to s3.")
 	}
 
 	if util.Path == "" {
@@ -50,6 +51,8 @@ func main() {
 
 	c := cron.New()
 	switch util.Provider {
+	case "az":
+		c.AddFunc("@every 5s", az.Sync)
 	case "gcs":
 		c.AddFunc("@every 5s", gcs.Sync)
 	case "s3":
