@@ -43,18 +43,18 @@ templates:
     tasks:
     - name: train-model
       template: tensorflow
-    # Uncomment following lines to get Slack notifications
-    # - arguments:
-    #     artifacts:
-    #     - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
-    #       name: metrics
-    #     parameters:
-    #     - name: status
-    #       value: '{{tasks.train-model.status}}'
-    #   dependencies:
-    #   - train-model
-    #   name: notify-in-slack
-    #   template: slack-notify-success
+# Uncomment following lines to get Slack notifications
+#     - arguments:
+#         artifacts:
+#         - from: '{{tasks.eval-model.outputs.artifacts.sys-metrics}}'
+#           name: metrics
+#         parameters:
+#         - name: status
+#           value: '{{tasks.eval-model.status}}'
+#      dependencies:
+#      - eval-model
+#      name: notify-in-slack
+#      template: slack-notify-success
   name: main
 - container:
     args:
@@ -99,8 +99,7 @@ templates:
       path: /mnt/output
       s3:
         key: '{{workflow.parameters.model-path}}'
-# uncomment following lines to send notifications to slack
-# it requires SLACK_WEBHOOK environment variable
+# Uncomment following lines to get Slack notifications
 # - container:
 #     args:
 #     - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
