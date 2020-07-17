@@ -6,11 +6,11 @@ arguments:
   - name: trainingsource
     value: https://github.com/onepanelio/cvat-training.git
  
-    #path to directory that contains (tfrecord and labelmap) for evaluation
+#path to directory that contains (tfrecord and labelmap) for evaluation
   - name: eval-dataset-path
     value: datasets/crb/CVAT-5-CLASSES/datasets/06-27-132956-5-classes_tfrecords_07112020005716
 
-    #various parameters for computation of confusion matrix
+#various parameters for computation of confusion matrix
   - name: confusion-params
     value: "iou_threshold=0.5,conf_threshold=0.5"
  
@@ -25,14 +25,14 @@ arguments:
     - name: 'Confusion Matrix (TFRecord)'
       value: confusion-matrix
  
-    #how many images to visualize during evaluation
+#how many images to visualize during evaluation
   - name: num-visualizations
     value: 0
  
   - name: revision
     value: onepanel
  
-    #where to store evaluation result
+#where to store evaluation result
   - name: eval-result-path
     value: datasets/crb/CVAT-5-CLASSES/evals/eval-06-23-2020-box_tfrecords_07032020221847/
  
@@ -42,12 +42,11 @@ arguments:
   - name: tf-image
     value: tensorflow/tensorflow:1.13.1-gpu-py3
  
-    #currently, cvat dumps data with default.tfrecord name, it may change
-    #so take it from user
+#currently, cvat dumps data with default.tfrecord name, it may change, so take it from user
   - name: record-name
     value: default.tfrecord
  
-    # metrics to use for TF OD API
+# metrics to use for TF OD API
   - displayName: TF Metric Type 
     hint: Which metric to use for evaluation
     type: select.select
@@ -86,18 +85,18 @@ templates:
     tasks:
     - name: eval-model
       template: tensorflow
-    # Uncomment following lines to get Slack notifications
-    # - arguments:
-    #     artifacts:
-    #     - from: '{{tasks.eval-model.outputs.artifacts.sys-metrics}}'
-    #       name: metrics
-    #     parameters:
-    #     - name: status
-    #       value: '{{tasks.eval-model.status}}'
-    #   dependencies:
-    #   - eval-model
-    #   name: notify-in-slack
-    #   template: slack-notify-success
+# Uncomment following lines to get Slack notifications
+#     - arguments:
+#         artifacts:
+#         - from: '{{tasks.eval-model.outputs.artifacts.sys-metrics}}'
+#           name: metrics
+#         parameters:
+#         - name: status
+#           value: '{{tasks.eval-model.status}}'
+#      dependencies:
+#      - eval-model
+#      name: notify-in-slack
+#      template: slack-notify-success
   name: main
 - container:
     args:
@@ -147,6 +146,7 @@ templates:
       path: /mnt/output
       s3:
         key: '{{workflow.parameters.eval-result-path}}'
+# Uncomment following lines to get Slack notifications
 # - container:
 #     args:
 #     - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
