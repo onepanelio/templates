@@ -2,47 +2,61 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/onepanelio/templates/tasks/file-syncer/providers/az"
 	"github.com/onepanelio/templates/tasks/file-syncer/providers/gcs"
 	"github.com/onepanelio/templates/tasks/file-syncer/providers/s3"
 	"github.com/onepanelio/templates/tasks/file-syncer/util"
 	"github.com/robfig/cron/v3"
-	"log"
 	"os"
 )
 
+func help(error string, flags *flag.FlagSet) {
+	if error != "" {
+		fmt.Printf("Error: %v\n\n", error)
+	}
+	if flags == nil {
+		fmt.Printf("Usage:\n \t %s <command> [arguments]\n\n", os.Args[0])
+		fmt.Println("The commands are:\n")
+		fmt.Println("   download\t download files from bucket or container")
+		fmt.Println("   upload\t upload files to bucket or container")
+		os.Exit(1)
+	}
+	fmt.Printf("Usage:\n   %s %s [options]\n\n", os.Args[0], util.Action)
+	fmt.Println("The options are:")
+	flags.PrintDefaults()
+	os.Exit(1)
+}
+
 func main() {
-	if os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload {
-		log.Fatalln("Please indicate if this is an 'upload' or 'download' action")
+	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload {
+		help("Please indicate if this is an 'upload' or 'download' action", nil)
 	}
 	util.Action = os.Args[1]
 
 	flags := flag.NewFlagSet(util.Action, flag.ExitOnError)
-	flags.StringVar(&util.Provider, "provider", "", "Storage provider: s3 or gcs")
+	flags.StringVar(&util.Provider, "provider", "", "Storage provider: s3 (default), az or gcs")
 	flags.StringVar(&util.Path, "path", "", "Path to local directory")
 	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
 	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
 	flags.Parse(os.Args[2:])
 
-	if util.Provider == "" {
-		util.Provider = util.Getenv("FS_PROVIDER", "")
-	}
-	if util.Provider == "" {
-		log.Println("No provider was set, defaulting to s3.")
-	}
-
 	if util.Path == "" {
 		util.Path = util.Getenv("FS_PATH", "")
 	}
 	if util.Path == "" {
-		log.Fatalln("Path is required")
+		help("path is required", flags)
 	}
 
 	if util.Bucket == "" {
 		util.Bucket = util.Getenv("FS_BUCKET", "")
 	}
 	if util.Bucket == "" {
-		log.Fatalln("Bucket or container name is required")
+		help("bucket or container name is required", flags)
+	}
+
+	if util.Provider == "" {
+		util.Provider = util.Getenv("FS_PROVIDER", "")
 	}
 
 	if util.Prefix == "" {
