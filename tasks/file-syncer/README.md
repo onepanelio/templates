@@ -26,5 +26,5 @@ docker run -it -v $(pwd)/files:/mnt -e GOOGLE_APPLICATION_CREDENTIALS=<key> file
 
 # az
 docker run -it -v $(pwd)/files:/mnt -e AZURE_STORAGE_ACCOUNT=<account> -e AZURE_STORAGE_KEY=<key> file-syncer:latest [upload|download] \
-    --provider az --path /mnt --bucket <bucket> --prefix <prefix>
+    --provider az --path /mnt --bucket <container> --prefix <prefix>
 ```
