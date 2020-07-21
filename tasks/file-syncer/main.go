@@ -74,10 +74,10 @@ func main() {
 	}
 	if util.Provider == "" {
 		if config.S3 != nil {
-			util.Bucket = config.S3.Bucket
+			util.Provider = "s3"
 		}
 		if config.GCS != nil {
-			util.Bucket = config.GCS.Bucket
+			util.Provider = "gcs"
 		}
 	}
 
