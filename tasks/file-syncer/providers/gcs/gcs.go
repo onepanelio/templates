@@ -6,6 +6,17 @@ import (
 	"os/exec"
 )
 
+func resolveEnv(cmd *exec.Cmd) {
+	serviceAccountKeyPath := util.Getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+	if serviceAccountKeyPath ==  "" {
+		serviceAccountKeyPath = util.Config.GCS.ServiceAccountKeyPath
+	}
+
+	cmd.Env = []string{
+		"GOOGLE_APPLICATION_CREDENTIALS=" + serviceAccountKeyPath,
+	}
+}
+
 func Sync() {
 	var cmd *exec.Cmd
 	uri := fmt.Sprintf("gs://%v/%v", util.Bucket, util.Prefix)
@@ -15,5 +26,6 @@ func Sync() {
 	if util.Action == util.ActionUpload {
 		cmd = util.Command("gsutil", "-m", "rsync", "-d", "-r", util.Path, uri)
 	}
+	resolveEnv(cmd)
 	cmd.Run()
 }
