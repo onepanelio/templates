@@ -17,7 +17,7 @@ func help(error string, flags *flag.FlagSet) {
 	}
 	if flags == nil {
 		fmt.Printf("Usage:\n \t %s <command> [arguments]\n\n", os.Args[0])
-		fmt.Println("The commands are:\n")
+		fmt.Print("The commands are:\n\n")
 		fmt.Println("   download\t download files from bucket or container")
 		fmt.Println("   upload\t upload files to bucket or container")
 		os.Exit(1)
@@ -41,6 +41,12 @@ func main() {
 	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
 	flags.Parse(os.Args[2:])
 
+	config, err := util.GetArtifactRepositoryConfig()
+	if err != nil {
+		help("artifact repository config was not found", flags)
+	}
+	util.Config = config
+
 	if util.Path == "" {
 		util.Path = util.Getenv("FS_PATH", "")
 	}
@@ -52,11 +58,27 @@ func main() {
 		util.Bucket = util.Getenv("FS_BUCKET", "")
 	}
 	if util.Bucket == "" {
+		if config.S3 != nil {
+			util.Bucket = config.S3.Bucket
+		}
+		if config.GCS != nil {
+			util.Bucket = config.GCS.Bucket
+		}
+	}
+	if util.Bucket == "" {
 		help("bucket or container name is required", flags)
 	}
 
 	if util.Provider == "" {
 		util.Provider = util.Getenv("FS_PROVIDER", "")
+	}
+	if util.Provider == "" {
+		if config.S3 != nil {
+			util.Bucket = config.S3.Bucket
+		}
+		if config.GCS != nil {
+			util.Bucket = config.GCS.Bucket
+		}
 	}
 
 	if util.Prefix == "" {
