@@ -1,0 +1,12 @@
+FROM amazon/aws-cli:2.0.33
+
+ENV PATH="/go/bin:${PATH}"
+
+WORKDIR /go/src
+COPY . .
+RUN yum install -y go \
+    && mkdir -p /go/bin \
+    && go build -o /go/bin/file-syncer \
+    && rm -rf /go/src/*
+
+ENTRYPOINT ["file-syncer"]
