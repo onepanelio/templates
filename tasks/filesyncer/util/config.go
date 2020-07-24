@@ -75,7 +75,7 @@ func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
 	if config.S3 != nil {
 		injectS3Credentials(config)
 	} else if config.GCS != nil {
-		config.GCS.ServiceAccountKeyPath = ConfigLocation + "/artifactRepositoryGCSServiceAccountKey"
+		config.GCS.ServiceAccountKeyPath = fmt.Sprintf("%v/%v", ConfigLocation, config.GCS.ServiceAccountKeySecret.Key)
 	} else {
 		return nil, errors.New("invalid configuration")
 	}
