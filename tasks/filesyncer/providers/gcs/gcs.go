@@ -14,6 +14,7 @@ func resolveEnv(cmd *exec.Cmd) {
 
 	cmd.Env = []string{
 		"GOOGLE_APPLICATION_CREDENTIALS=" + serviceAccountKeyPath,
+		"CLOUDSDK_PYTHON=python3",
 	}
 }
 
