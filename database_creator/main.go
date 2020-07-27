@@ -35,7 +35,7 @@ func GetDatabaseConnectionFromEnvironment() (*DatabaseConnection, error) {
 	}
 
 	if conn.DefaultDatabaseName == "" {
-		conn.DefaultDatabaseName = conn.Username
+		conn.DefaultDatabaseName = "postgres"
 	}
 
 	port, err := strconv.Atoi(os.Getenv("PORT"))
