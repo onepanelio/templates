@@ -38,9 +38,18 @@ func GetDatabaseConnectionFromEnvironment() (*DatabaseConnection, error) {
 		conn.DefaultDatabaseName = "postgres"
 	}
 
-	port, err := strconv.Atoi(os.Getenv("PORT"))
-	if err != nil {
-		return nil, err
+	port := 5432
+	envPort := os.Getenv("PORT")
+	if envPort == "" {
+		log.Printf("Port not set. Using 5432")
+	} else {
+		parsedPort, err := strconv.Atoi(envPort)
+		if err != nil {
+			log.Printf("Unable to convert port \"%v\" to integer.", envPort)
+			return nil, err
+		}
+
+		port = parsedPort
 	}
 
 	conn.Port = port
