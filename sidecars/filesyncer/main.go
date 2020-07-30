@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/onepanelio/templates/tasks/file-syncer/providers/az"
-	"github.com/onepanelio/templates/tasks/file-syncer/providers/gcs"
-	"github.com/onepanelio/templates/tasks/file-syncer/providers/s3"
-	"github.com/onepanelio/templates/tasks/file-syncer/util"
+	"github.com/onepanelio/templates/sidecars/filesyncer/providers/az"
+	"github.com/onepanelio/templates/sidecars/filesyncer/providers/gcs"
+	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 	"github.com/robfig/cron/v3"
 	"os"
 )

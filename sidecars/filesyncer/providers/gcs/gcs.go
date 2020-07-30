@@ -2,7 +2,7 @@ package gcs
 
 import (
 	"fmt"
-	"github.com/onepanelio/templates/tasks/file-syncer/util"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 	"os/exec"
 )
 
