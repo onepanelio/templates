@@ -7,23 +7,25 @@ arguments:
   - name: revision
     value: v1.13.0
   - name: dataset-path
-    value: datasets/multiple/5-classes-first-0710
+    value: datasets/sample_model
   - name: model-path
-    value: 'datasets/crb/CVAT-5-CLASSES/models/cvat-5-classes_tfod_frcnn-res50-coco_e30000_all_07102020170477'
+    value: 'datasets/sample_data'
   - name: ref-model
     value: frcnn-res50-coco
-  - name: bucket-name
-    value: cnas-re.uog.onepanel.io
   - name: extras
-    value: '"epochs"="1000","--stage3_epochs"=3,"--stage1_epochs"=1,"--stage2_epochs"=2,"schedule_step_1"=15000,"schedule_step_2"=18000'
-  - name: ref-model-path
-    value: 'datasets/crb/CVAT-BOX/models/cvat-box_tfod_frcnn-res101-coco_e60000_07042020221866/'
+    value: '"epochs"="1000","schedule_step_1"=15000,"schedule_step_2"=18000'
+  - name: sys-finetune-checkpoint
+    value: 'datasets/finetune_model/'
   - name: num-classes
     value: '5'
-  - name: task-name
-    value: CVAT-5-CLASSES
   - name: tf-image
     value: tensorflow/tensorflow:1.13.1-gpu-py3
+    type: select.select
+    options:
+    - name: 'Tensorflow 1.13.1 CPU Image'
+      value: 'tensorflow/tensorflow:1.13.1-py3'
+    - name: 'Tensorflow 1.13.1 GPU Image'
+      value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
   - displayName: Node pool
     hint: Name of node pool or group
     type: select.select
@@ -47,7 +49,7 @@ templates:
 #    - arguments:
 #        artifacts:
 #        - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
-#          name: metrics
+#         name: metrics
 #        parameters:
 #        - name: status
 #          value: '{{tasks.train-model.status}}'
@@ -57,6 +59,12 @@ templates:
 #      template: slack-notify-success
   name: main
 - container:
+    resources:
+      requests:
+        memory: '100Gi'
+        nvidia.com/gpu: 1
+      limits:
+        nvidia.com/gpu: 1 
     args:
     - |
       apt-get update && \
@@ -65,7 +73,7 @@ templates:
       cd /mnt/src/tf/research && \
       export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim && \
       cd /mnt/src/train && \
-      python convert_workflow.py {{workflow.parameters.extras}},dataset=/mnt/data/datasets,model={{workflow.parameters.ref-model}},num_classes={{workflow.parameters.num-classes}},task_name={{workflow.parameters.task-name}},ref-model-path={{workflow.parameters.ref-model-path}}
+      python convert_workflow.py {{workflow.parameters.extras}},dataset=/mnt/data/datasets,model={{workflow.parameters.ref-model}},num_classes={{workflow.parameters.num-classes}},ref-model-path={{workflow.parameters.sys-finetune-checkpoint}}
     command:
     - sh
     - -c
@@ -76,8 +84,6 @@ templates:
     - mountPath: /mnt/output
       name: output
     workingDir: /mnt/src
-  nodeSelector:
-    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
   inputs:
     artifacts:
     - name: data
@@ -102,23 +108,23 @@ templates:
       s3:
         key: '{{workflow.parameters.model-path}}'
 # Uncomment the lines below if you want to send Slack notifications
-#- container:
-#    args:
-#    - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
-#      SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
-#      SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
-#    command:
-#    - sh
-#    - -c
-#    image: technosophos/slack-notify
-#  inputs:
-#    artifacts:
-#    - name: metrics
-#      optional: true
-#      path: /tmp/metrics.json
-#    parameters:
-#    - name: status
-#  name: slack-notify-success
+# - container:
+#     args:
+#     - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
+#       SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
+#       SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
+#     command:
+#     - sh
+#     - -c
+#     image: technosophos/slack-notify
+#   inputs:
+#     artifacts:
+#     - name: metrics
+#       optional: true
+#       path: /tmp/metrics.json
+#     parameters:
+#     - name: status
+#   name: slack-notify-success
 volumeClaimTemplates:
 - metadata:
     creationTimestamp: null
