@@ -104,23 +104,23 @@ templates:
       s3:
         key: '{{workflow.parameters.model-path}}'
 # Uncomment the lines below if you want to send Slack notifications
-# - container:
-#     args:
-#     - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
-#       SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
-#       SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
-#     command:
-#     - sh
-#     - -c
-#     image: technosophos/slack-notify
-#   inputs:
-#     artifacts:
-#     - name: metrics
-#       optional: true
-#       path: /tmp/metrics.json
-#     parameters:
-#     - name: status
-#   name: slack-notify-success
+#- container:
+#    args:
+#    - SLACK_USERNAME=Onepanel SLACK_TITLE="{{workflow.name}} {{inputs.parameters.status}}"
+#      SLACK_ICON=https://www.gravatar.com/avatar/5c4478592fe00878f62f0027be59c1bd
+#      SLACK_MESSAGE=$(cat /tmp/metrics.json)} ./slack-notify
+#    command:
+#    - sh
+#    - -c
+#    image: technosophos/slack-notify
+#  inputs:
+#    artifacts:
+#    - name: metrics
+#      optional: true
+#      path: /tmp/metrics.json
+#    parameters:
+#    - name: status
+#  name: slack-notify-success
 volumeClaimTemplates:
 - metadata:
     creationTimestamp: null
