@@ -49,7 +49,7 @@ templates:
 #    - arguments:
 #        artifacts:
 #        - from: '{{tasks.train-model.outputs.artifacts.sys-metrics}}'
-#         name: metrics
+#          name: metrics
 #        parameters:
 #        - name: status
 #          value: '{{tasks.train-model.status}}'
@@ -59,12 +59,6 @@ templates:
 #      template: slack-notify-success
   name: main
 - container:
-    resources:
-      requests:
-        memory: '100Gi'
-        nvidia.com/gpu: 1
-      limits:
-        nvidia.com/gpu: 1 
     args:
     - |
       apt-get update && \
@@ -84,6 +78,8 @@ templates:
     - mountPath: /mnt/output
       name: output
     workingDir: /mnt/src
+  nodeSelector:
+    beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
   inputs:
     artifacts:
     - name: data
