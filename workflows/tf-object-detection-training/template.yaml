@@ -7,9 +7,9 @@ arguments:
   - name: revision
     value: v1.13.0
   - name: sys-annotation-path
-    value: datasets/sample_model
+    value: demo-namespace/annotation-dump/sample_dataset
   - name: sys-output-path
-    value: 'datasets/sample_data'
+    value: demo-namespace/workflow-data/output/sample_output
   - name: ref-model
     value: frcnn-res50-coco
   - name: extras
