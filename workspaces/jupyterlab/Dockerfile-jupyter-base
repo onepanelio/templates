@@ -1,4 +1,4 @@
-ARG BASE_CONTAINER=jupyter/scipy-notebook
+ARG BASE_CONTAINER=onepanel/scipy-notebook
 FROM $BASE_CONTAINER
 
 LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
