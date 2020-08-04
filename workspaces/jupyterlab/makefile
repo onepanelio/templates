@@ -1,6 +1,5 @@
 docker-build-base-notebook:
-	docker build -f Dockerfile-base-notebook -t base-notebook .
-	docker tag base-notebook:latest onepanel/base-notebook:latest
+	cd base-notebook && make docker-build-base-notebook
 
 docker-push-base-notebook:
 	docker push onepanel/base-notebook:latest
