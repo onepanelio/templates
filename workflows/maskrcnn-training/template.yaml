@@ -4,8 +4,10 @@ arguments:
     value: https://github.com/onepanelio/Mask_RCNN.git
   - name: sys-annotation-path
     value: demo-namespace/annotation-dump/sample_dataset
+    hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3)."
   - name: sys-output-path
     value: demo-namespace/workflow-data/output/sample_output
+    hint: "If you want to use this output in CVAT, it must have '<namespace>/workflow-data/output/<dir-name>' prefix."
   - name: extras
     value: none
   - name: num-classes
