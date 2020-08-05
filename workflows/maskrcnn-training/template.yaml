@@ -30,7 +30,7 @@ arguments:
     value: 3
     displayName: Epochs for finetuning all layers
   - name: tf-image
-    value: tensorflow/tensorflow:1.13.1-gpu-py3
+    value: tensorflow/tensorflow:1.13.1-py3
     type: select.select
     displayName: Select tensorflow image
     options:
