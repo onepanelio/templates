@@ -4,7 +4,7 @@ arguments:
   - name: storage-prefix
     displayName: Directory in default object storage
     value: workflow-data
-    hint: Location of data and models in default object storage, will continuously sync to '/mnt/share'
+    hint: Location of data and models in default object storage, will continuously sync to '/mnt/share'. This will be automatically prefixed with the namespace name.
 containers:
 - name: cvat-db
   image: postgres:10-alpine
@@ -72,7 +72,7 @@ containers:
   - name: FS_PATH
     value: /mnt/share
   - name: FS_PREFIX
-    value: '{{workspace.parameters.storage-prefix}}'
+    value: '{{workflow.namespace}}/{{workspace.parameters.storage-prefix}}'
   volumeMounts:
   - name: share
     mountPath: /mnt/share
