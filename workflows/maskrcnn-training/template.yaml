@@ -13,7 +13,7 @@ arguments:
   - name: num-classes
     value: 2
   - name: sys-finetune-checkpoint
-    value: demo-namespace/workflow-data/output/demo_checkpoint
+    value: ""
     hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3) or leave it empty."
   - name: stage-1-epochs
     value: 1
