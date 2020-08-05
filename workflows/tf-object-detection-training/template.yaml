@@ -93,7 +93,7 @@ templates:
       cd /mnt/src/tf/research && \
       export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim && \
       cd /mnt/src/train && \
-      python convert_workflow.py {{workflow.parameters.extras}},dataset=/mnt/data/datasets,model={{workflow.parameters.ref-model}},num_classes={{workflow.parameters.num-classes}},ref-model-path={{workflow.parameters.sys-finetune-checkpoint}}
+      python convert_workflow.py {{workflow.parameters.extras}},dataset=/mnt/data/datasets,model={{workflow.parameters.ref-model}},num_classes={{workflow.parameters.num-classes}},sys-finetune-checkpoint={{workflow.parameters.sys-finetune-checkpoint}}
     command:
     - sh
     - -c
