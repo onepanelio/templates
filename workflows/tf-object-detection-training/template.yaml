@@ -17,8 +17,8 @@ arguments:
   - name: extras
     value: '"epochs"="1000","schedule_step_1"=15000,"schedule_step_2"=18000'
   - name: sys-finetune-checkpoint
-    value: demo-namespace/workflow-data/output/demo_checkpoint
-    hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3) or leave it empty."
+    value: ''
+    hint: "Please enter path which exists in cloud storage (i.e s3) or leave it empty."
   - name: num-classes
     value: '5'
   - name: tf-image
