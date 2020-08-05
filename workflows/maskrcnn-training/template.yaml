@@ -4,26 +4,35 @@ arguments:
     value: https://github.com/onepanelio/Mask_RCNN.git
   - name: sys-annotation-path
     value: annotation-dump/sample_dataset
-    hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3)."
+    hint: Please enter path which exists in cloud storage (i.e s3). In CVAT, this will be pre-populated. Some CVAT features may not work properly if you change that.
+    displayName: Dataset path
   - name: sys-output-path
     value: workflow-data/output/sample_output
-    hint: "If you want to use this output in CVAT, it must have '<namespace>/workflow-data/output/<dir-name>' prefix."
+    hint: If you want to use this output in CVAT, it must have '<namespace>/workflow-data/output/<dir-name>' prefix.
+    displayName: Workflow output path
   - name: extras
     value: none
   - name: num-classes
     value: 2
+    hint: "Number of classes you have (i.e in CVAT task) +  1 for Background class."
+    displayName: Number of classes
   - name: sys-finetune-checkpoint
     value: ""
     hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3) or leave it empty."
+    displayName: Checkpoint path
   - name: stage-1-epochs
     value: 1
+    displayName: Epochs for network heads
   - name: stage-2-epochs
     value: 2
+    displayName: Epochs for finetune layers (ResNet)
   - name: stage-3-epochs
     value: 3
+    displayName: Epochs for finetuning all layers
   - name: tf-image
     value: tensorflow/tensorflow:1.13.1-gpu-py3
     type: select.select
+    displayName: Select tensorflow image
     options:
     - name: 'Tensorflow 1.13.1 CPU Image'
       value: 'tensorflow/tensorflow:1.13.1-py3'
