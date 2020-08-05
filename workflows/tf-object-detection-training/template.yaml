@@ -8,22 +8,45 @@ arguments:
     value: v1.13.0
   - name: sys-annotation-path
     value: annotation-dump/sample_dataset
-    hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3)."
+    displayName: Dataset path
+    hint: Please enter path which exists in cloud storage (i.e s3). In CVAT, this will be pre-populated. Some CVAT features may not work properly if you change that.
   - name: sys-output-path
     value: workflow-data/output/sample_output
-    hint: "If you want to use this output in CVAT, it must have '<namespace>/workflow-data/output/<dir-name>' prefix."
+    hint: If you want to use this output in CVAT, it must have '<namespace>/workflow-data/output/<dir-name>' prefix.
+    displayName: Workflow output path
   - name: ref-model
     value: frcnn-res50-coco
+    displayName: Reference model
+    hint: Detection API's model to use for training.
+    type: select.select
+    options:
+    - name: 'Faster RCNN-ResNet 101-COCO'
+      value: frcnn-res101-coco
+    - name: 'Faster RCNN-ResNet 101-Low Proposal-COCO'
+      value: frcnn-res101-low
+    - name: 'Faster RCNN-ResNet 50-COCO'
+      value: frcnn-res50-coco
+    - name: 'Faster RCNN-NAS-COCO'
+      value: frcnn-nas-coco
+    - name: 'SSD MobileNet V1-COCO'
+      value: ssd-mobilenet-v1-coco2
+    - name: 'SSD MobileNet V2-COCO'
+      value: ssd-mobilenet-v2-coco
+    - name: 'SSDLite MobileNet-COCO'
+      value: ssdlite-mobilenet-coco
   - name: extras
     value: '"epochs"="1000","schedule_step_1"=15000,"schedule_step_2"=18000'
   - name: sys-finetune-checkpoint
     value: ''
-    hint: "Please enter path which exists in cloud storage (i.e s3) or leave it empty."
+    hint: Please enter path which exists in cloud storage (i.e s3) or leave it empty.
+    displayName: Checkpoint path
   - name: num-classes
     value: '5'
+    displayName: Number of classes
   - name: tf-image
-    value: tensorflow/tensorflow:1.13.1-gpu-py3
+    value: tensorflow/tensorflow:1.13.1-py3
     type: select.select
+    displayName: Select tensorflow image
     options:
     - name: 'Tensorflow 1.13.1 CPU Image'
       value: 'tensorflow/tensorflow:1.13.1-py3'
@@ -33,7 +56,7 @@ arguments:
     hint: Name of node pool or group
     type: select.select
     name: sys-node-pool
-    value: Standard_NC6
+    value: Standard_D4s_v3
     required: true
     options:
     - name: 'CPU: 2, RAM: 8GB'
