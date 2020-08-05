@@ -76,7 +76,7 @@ templates:
       apt-get update \
       && apt-get install -y git wget libglib2.0-0 libsm6 libxext6 libxrender-dev \
       && pip install -r requirements.txt \
-      && pip install boto3 \
+      && pip install boto3 pyyaml google-cloud-storage \
       && git clone https://github.com/waleedka/coco \
       && cd coco/PythonAPI \
       && python setup.py build_ext install \
