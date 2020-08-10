@@ -11,6 +11,7 @@ var (
 	Bucket   string
 	Prefix   string
 	Action   string
+	Interval string
 	Config 	 *artifactRepositoryProviderConfig
 )
 
