@@ -24,11 +24,11 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub && \
     sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ /" && \
     sudo apt-get update && \
-    sudo apt-get -y install cuda-10-2 && \
-    dpkg -i libcudnn8_8.0.2.39-1+cuda10.2_amd64.deb libcudnn8-dev_8.0.2.39-1+cuda10.2_amd64.deb && \
-    pip install -U --user pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \
-    pip install -U --user keras_applications --no-deps && \
-    pip install -U --user keras_preprocessing --no-deps && \
+#    sudo apt-get -y install cuda-10-2 && \
+#    dpkg -i libcudnn8_8.0.2.39-1+cuda10.2_amd64.deb libcudnn8-dev_8.0.2.39-1+cuda10.2_amd64.deb && \
+    pip3 install -U --user pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \
+    pip3 install -U --user keras_applications --no-deps && \
+    pip3 install -U --user keras_preprocessing --no-deps && \
     wget https://github.com/bazelbuild/bazelisk/releases/download/v1.5.0/bazelisk-linux-amd64 && \
     mv bazelisk-linux-amd64 /usr/local/bin/bazel && \
     chmod a+x /usr/local/bin/bazel && \

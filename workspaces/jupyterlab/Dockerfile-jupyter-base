@@ -7,9 +7,9 @@ LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
 #Do not switch out root user, want to run as root.
 USER root
 
-RUN pip install --upgrade jupyterlab-git && \
-    pip install --upgrade nbdime && \
-    pip install --upgrade tensorboard && \
+RUN pip3 install --upgrade jupyterlab-git && \
+    pip3 install --upgrade nbdime && \
+    pip3 install --upgrade tensorboard && \
     jupyter labextension install @jupyterlab/github && \
     jupyter labextension install @jupyterlab/debugger && \
     jupyter lab build -y && \
