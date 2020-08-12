@@ -1,4 +1,5 @@
-ARG BASE_CONTAINER=onepanel/scipy-notebook
+ARG CONTAINER_TAG=latest
+ARG BASE_CONTAINER=onepanel/scipy-notebook:$CONTAINER_TAG
 FROM $BASE_CONTAINER
 
 LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
