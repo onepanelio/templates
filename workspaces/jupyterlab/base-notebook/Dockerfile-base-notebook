@@ -2,10 +2,9 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-# nvidia/cuda:10.2-runtime-ubuntu18.04
-# https://hub.docker.com/_/ubuntu/?tab=tags&name=focal
+# https://hub.docker.com/layers/nvidia/cuda/10.2-cudnn8-runtime-ubuntu18.04/images/sha256-599ac3765384225f1f3cac21a832248723407334c7bd42f31a3bde21dbefcd23?context=explore
 # OS/ARCH: linux/amd64
-ARG ROOT_CONTAINER=nvidia/cuda:10.2-devel-ubuntu18.04
+ARG ROOT_CONTAINER=nvidia/cuda:10.2-cudnn8-devel-ubuntu18.04
 
 ARG BASE_CONTAINER=$ROOT_CONTAINER
 FROM $BASE_CONTAINER
