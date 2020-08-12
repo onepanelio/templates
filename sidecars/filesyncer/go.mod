@@ -1,4 +1,4 @@
-module github.com/onepanelio/templates/tasks/file-syncer
+module github.com/onepanelio/templates/sidecars/filesyncer
 
 go 1.14
 

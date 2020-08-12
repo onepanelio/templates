@@ -39,6 +39,7 @@ func main() {
 	flags.StringVar(&util.Path, "path", "", "Path to local directory")
 	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
 	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
+	flags.StringVar(&util.Interval, "interval", "", "Sync interval in seconds")
 	flags.Parse(os.Args[2:])
 
 	config, err := util.GetArtifactRepositoryConfig()
@@ -85,16 +86,21 @@ func main() {
 		util.Prefix = util.Getenv("FS_PREFIX", "")
 	}
 
+	if util.Interval == "" {
+		util.Interval = util.Getenv("FS_INTERVAL", "300")
+	}
+
 	c := cron.New()
+	spec := fmt.Sprintf("@every %ss", util.Interval)
 	switch util.Provider {
 	case "az":
-		c.AddFunc("@every 5s", az.Sync)
+		c.AddFunc(spec, az.Sync)
 	case "gcs":
-		c.AddFunc("@every 5s", gcs.Sync)
+		c.AddFunc(spec, gcs.Sync)
 	case "s3":
 		fallthrough
 	default:
-		c.AddFunc("@every 5s", s3.Sync)
+		c.AddFunc(spec, s3.Sync)
 	}
 	c.Run()
 }
