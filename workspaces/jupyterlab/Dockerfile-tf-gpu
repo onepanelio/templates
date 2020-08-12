@@ -6,9 +6,9 @@ LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
 
 #Do not switch out root user, want to run as root.
 USER root
-
-COPY "libcudnn8-dev_8.0.2.39-1+cuda10.2_amd64.deb" "libcudnn8-dev_8.0.2.39-1+cuda10.2_amd64.deb"
-COPY "libcudnn8_8.0.2.39-1+cuda10.2_amd64.deb" "libcudnn8_8.0.2.39-1+cuda10.2_amd64.deb"
+# todo run apt clean
+#COPY "libcudnn8-dev_8.0.2.39-1+cuda10.2_amd64.deb" "libcudnn8-dev_8.0.2.39-1+cuda10.2_amd64.deb"
+#COPY "libcudnn8_8.0.2.39-1+cuda10.2_amd64.deb" "libcudnn8_8.0.2.39-1+cuda10.2_amd64.deb"
 COPY keyboard.conf keyboard.conf
 
 ARG TENSORFLOW_VERSION=r2.3.0
