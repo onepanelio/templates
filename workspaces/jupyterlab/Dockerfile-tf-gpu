@@ -26,7 +26,12 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     git clone https://github.com/tensorflow/tensorflow.git && \
     cd tensorflow && \
     git checkout r2.3 && \
-    cp /home/root/.tf_configure.bazelrc ./.tf_configure.bazelrc
+    cp /home/root/.tf_configure.bazelrc ./.tf_configure.bazelrc && \
+    bazel build //tensorflow/tools/pip_package:build_pip_package && \
+    ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg && \
+    pip3 --no-cache-dir install /tmp/tensorflow_pkg/tensorflow-2.3.0-cp36-cp36m-linux_x86_64.whl && \
+    cd /home/root && \
+    rm -rf /home/root/tensorflow && \
     npm cache clean --force && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     rm -rf "/home/${NB_USER}/.node-gyp" && \
