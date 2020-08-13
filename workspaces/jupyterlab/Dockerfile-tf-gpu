@@ -8,6 +8,7 @@ LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
 USER root
 # todo run apt clean
 COPY keyboard.conf keyboard.conf
+COPY tf_configure.bazelrc /home/root/.tf_configure.bazelrc
 
 ARG TENSORFLOW_VERSION=r2.3.0
 ENV TF_CUDA_COMPUTE_CAPABILITIES=3.5,7.0
@@ -26,6 +27,7 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     git clone https://github.com/tensorflow/tensorflow.git && \
     cd tensorflow && \
     git checkout r2.3 && \
+    cp /home/root/.tf_configure.bazelrc ./.tf_configure.bazelrc
     npm cache clean --force && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     rm -rf "/home/${NB_USER}/.node-gyp" && \
