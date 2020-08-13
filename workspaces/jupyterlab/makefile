@@ -32,6 +32,13 @@ docker-build-jupyter-base:
 docker-push-jupyter-base:
 	docker push onepanel/jupyterlab-base:$(version)
 
+docker-build-opencv-base:
+	docker build --build-arg CONTAINER_TAG=$(version) -f Dockerfile-opencv -t opencv-base .
+	docker tag opencv-base:latest onepanel/opencv-base:$(version)
+
+docker-push-opencv-base:
+	docker push onepanel/opencv-base:$(version)
+
 docker-build-tf-gpu:
 	docker build --build-arg CONTAINER_TAG=$(version) -f Dockerfile-tf-gpu -t tensorflow-gpu .
 	docker tag tensorflow-gpu:latest onepanel/tensorflow-gpu:$(version)
