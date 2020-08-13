@@ -7,7 +7,7 @@ LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
 #Do not switch out root user, want to run as root.
 USER root
 
-RUN pip3 install torch torchvision tensorflow && \
+RUN pip3 --no-cache-dir install torch torchvision && \
     npm cache clean --force && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     rm -rf "/home/${NB_USER}/.node-gyp" && \

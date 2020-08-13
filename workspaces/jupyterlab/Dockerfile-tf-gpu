@@ -6,7 +6,6 @@ LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
 
 #Do not switch out root user, want to run as root.
 USER root
-# todo run apt clean
 COPY keyboard.conf keyboard.conf
 COPY tf_configure.bazelrc /home/root/.tf_configure.bazelrc
 
@@ -18,9 +17,9 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     sudo apt install -y debconf-utils python3-dev python3-pip && \
     debconf-set-selections < keyboard.conf && \
     sudo apt-get install -y software-properties-common vim && \
-    pip3 install -U pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \
-    pip3 install -U keras_applications --no-deps && \
-    pip3 install -U keras_preprocessing --no-deps && \
+    pip3 --no-cache-dir install -U pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \
+    pip3 --no-cache-dir install -U keras_applications --no-deps && \
+    pip3 --no-cache-dir install -U keras_preprocessing --no-deps && \
     wget https://github.com/bazelbuild/bazelisk/releases/download/v1.5.0/bazelisk-linux-amd64 && \
     mv bazelisk-linux-amd64 /usr/local/bin/bazel && \
     chmod a+x /usr/local/bin/bazel && \
@@ -31,4 +30,8 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     npm cache clean --force && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     rm -rf "/home/${NB_USER}/.node-gyp" && \
-    fix-permissions "/home/${NB_USER}"
+    fix-permissions "/home/${NB_USER}" && \
+    && apt-get clean \
+    && apt-get autoremove \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/archives/*

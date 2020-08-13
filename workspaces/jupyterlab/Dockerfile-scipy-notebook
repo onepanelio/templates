@@ -32,7 +32,7 @@ RUN curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - && \
 USER $NB_UID
 
 # Install Python 3 packages
-RUN pip3 install \
+RUN pip3 --no-cache-dir install \
     'beautifulsoup4==4.9.*' \
     'bokeh==2.1.*' \
     'bottleneck==1.3.*' \
