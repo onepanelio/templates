@@ -25,6 +25,7 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     chmod a+x /usr/local/bin/bazel && \
     git clone https://github.com/tensorflow/tensorflow.git && \
     cd tensorflow && \
+    git checkout r2.3 && \
     npm cache clean --force && \
     rm -rf "/home/${NB_USER}/.cache/yarn" && \
     rm -rf "/home/${NB_USER}/.node-gyp" && \
