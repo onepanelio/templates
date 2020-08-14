@@ -1,0 +1,12 @@
+FROM google/cloud-sdk:302.0.0-alpine
+
+ENV PATH="/go/bin:${PATH}"
+
+WORKDIR /go/src
+COPY . .
+RUN apk --no-cache add go \
+    && mkdir -p /go/bin \
+    && go build -o /go/bin/filesyncer \
+    && rm -rf /go/src/*
+
+ENTRYPOINT ["filesyncer"]
