@@ -5,8 +5,46 @@ FROM $BASE_CONTAINER
 # Install opencv
 ARG OPENCV_VERSION=4.3.0
 
-RUN apt-get update \
-    && apt-get install -y software-properties-common \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        tcl \
+        tk \
+        ant \
+        apt-utils \
+        bc \
+        build-essential \
+        cmake \
+        default-jdk \
+        doxygen \
+        gfortran \
+        golang \
+        iptables \
+        libboost-all-dev \
+        libeigen3-dev \
+        libfreetype6-dev \
+        libhdf5-dev \
+        libjpeg-turbo8-dev \
+        liblcms2-dev \
+        libopenblas-dev \
+        liblapack-dev \
+        libpng-dev \
+        libprotobuf-dev \
+        libsdl2-dev \
+        libtiff-dev \
+        libtiff5-dev \
+        libvncserver-dev \
+        libzmq3-dev \
+        nano \
+        net-tools \
+        openmpi-bin \
+        pkg-config \
+        protobuf-compiler \
+        rsync \
+        software-properties-common \
+        swig \
+        vim \
+        webp \
+        xorg-dev \
+        xvfb \
     && add-apt-repository "deb http://security.ubuntu.com/ubuntu xenial-security main" \
     && apt-get install -y \
         libavcodec-dev \
@@ -32,6 +70,7 @@ RUN apt-get update \
         libxine2-dev \
         libxvidcore-dev \
         qt5-default \
+        cmake \
     && apt-get clean \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/* \
@@ -46,7 +85,11 @@ RUN cd ~/ && \
     cmake -D CMAKE_BUILD_TYPE=RELEASE \
         -DWITH_QT=ON \
         -DWITH_OPENGL=ON \
+        -D WITH_CUDA=ON \
+        -D CUDA_CUDA_LIBRARY=/usr/local/cuda/lib64/stubs/libcuda.so \
         -D ENABLE_FAST_MATH=1 \
+        -D CUDA_FAST_MATH=1 \
+        -D WITH_CUBLAS=1 \
         -DFORCE_VTK=ON \
         -DWITH_TBB=ON \
         -DWITH_GDAL=ON \
