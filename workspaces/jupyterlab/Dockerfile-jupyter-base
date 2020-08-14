@@ -10,6 +10,7 @@ USER root
 RUN pip3 --no-cache-dir install --upgrade jupyterlab-git && \
     pip3 --no-cache-dir install --upgrade nbdime && \
     pip3 --no-cache-dir install --upgrade tensorboard && \
+    pip3 --no-cache-dir install --upgrade numpy && \
     jupyter labextension install @jupyterlab/github && \
     jupyter labextension install @jupyterlab/debugger && \
     jupyter lab build -y && \
