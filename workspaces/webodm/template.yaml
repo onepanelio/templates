@@ -11,7 +11,6 @@ containers:
     volumeMounts:
     - name: data
       mountPath: /var/lib/psql
-
   - name: webapp
     image: opendronemap/webodm_webapp 
     volumeMounts:
@@ -20,7 +19,7 @@ containers:
     command: ['/bin/bash']
     args:
       - -c
-      - "chmod +x /webodm/*.sh && /webodm/wait-for-postgres.sh localhost /webodm/wait-for-it.sh -t 0 localhost:6379 -- /webodm/start.sh"
+      - "chmod +x /webodm/*.sh && /webodm/wait-for-postgres.sh localhost && sleep 10 && /webodm/wait-for-postgres.sh localhost && /webodm/wait-for-it.sh -t 0 localhost:6379 -- /webodm/start.sh"
     ports:
     - containerPort: 8000
       name: http
@@ -39,13 +38,10 @@ containers:
       value: NO
     - name: WO_BROKER
       value: redis://localhost
-
   - name: node-odm 
     image: opendronemap/nodeodm
-
     ports:
     - containerPort: 3000
-
   - name: broker
     image: redis
     ports:
@@ -59,7 +55,7 @@ containers:
     command:  ['/bin/bash']
     args:
       - -c
-      - "/webodm/wait-for-postgres.sh localhost /webodm/wait-for-it.sh -t 0 localhost:6379 -- /webodm/wait-for-it.sh -t 0 localhost:8000 -- /webodm/worker.sh start"
+      - "/webodm/wait-for-postgres.sh localhost /webodm/wait-for-it.sh -t 0 localhost:6379 -- /webodm/start.sh"
     env:
     - name: WO_DATABASE_HOST
       value: localhost
