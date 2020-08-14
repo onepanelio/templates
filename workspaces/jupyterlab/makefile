@@ -54,9 +54,9 @@ docker-push-pytorch-gpu:
 	docker push onepanel/pytorch-gpu:$(version)
 
 docker-build: docker-build-base-notebook docker-build-minimal-notebook docker-build-scipy-notebook \
-	docker-build-jupyter-base docker-build-tf-gpu docker-build-pytorch-gpu
+	docker-build-jupyter-base docker-build-opencv-base docker-build-tf-gpu docker-build-pytorch-gpu
 
 docker-push: docker-push-base-notebook docker-push-minimal-notebook docker-push-scipy-notebook \
-	docker-push-jupyter-base docker-push-tf-gpu docker-push-pytorch-gpu
+	docker-push-jupyter-base docker-push-opencv-base docker-push-tf-gpu docker-push-pytorch-gpu
 
 docker: docker-build docker-push
