@@ -8,7 +8,8 @@ arguments:
  
 #path to directory that contains (tfrecord and labelmap) for evaluation
   - name: eval-dataset-path
-    value: datasets/crb/CVAT-5-CLASSES/datasets/06-27-132956-5-classes_tfrecords_07112020005716
+    value: annotation-dump/sample_eval_dataset
+    hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3)"
 
 #various parameters for computation of confusion matrix
   - name: confusion-params
@@ -34,13 +35,20 @@ arguments:
  
 #where to store evaluation result
   - name: eval-result-path
-    value: datasets/crb/CVAT-5-CLASSES/evals/eval-06-23-2020-box_tfrecords_07032020221847/
+    value: workflow-data/output/demo_eval_path/
  
   - name: eval-model-path
-    value: datasets/crb/CVAT-5-CLASSES/models/cvat-box_tfod_frcnn-res101-coco_07042020221848
+    value: workflow-data/output/demo_trained_model/
+    hint: "Default value is for demo purpose only. Please enter path which exists in cloud storage (i.e s3)" 
  
   - name: tf-image
     value: tensorflow/tensorflow:1.13.1-gpu-py3
+    type: select.select
+    options:
+    - name: 'Tensorflow 1.13.1 CPU Image'
+      value: 'tensorflow/tensorflow:1.13.1-py3'
+    - name: 'Tensorflow 1.13.1 GPU Image'
+      value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
  
 #currently, cvat dumps data with default.tfrecord name, it may change, so take it from user
   - name: record-name
@@ -125,11 +133,11 @@ templates:
     - name: data
       path: /mnt/data/datasets/
       s3:
-        key: '{{workflow.parameters.eval-dataset-path}}'
+        key: '{{workflow.namespace}}/{{workflow.parameters.eval-dataset-path}}'
     - name: models
       path: /mnt/data/models/
       s3: 
-        key: '{{workflow.parameters.eval-model-path}}'
+        key: '{{workflow.namespace}}/{{workflow.parameters.eval-model-path}}'
     - git:
         repo: '{{workflow.parameters.source}}'
         revision: '{{workflow.parameters.revision}}'
@@ -147,7 +155,7 @@ templates:
       optional: true
       path: /mnt/output
       s3:
-        key: '{{workflow.parameters.eval-result-path}}'
+        key: '{{workflow.namespace}}/{{workflow.parameters.eval-result-path}}'
 # Uncomment the lines below if you want to send Slack notifications
 #- container:
 #    args:

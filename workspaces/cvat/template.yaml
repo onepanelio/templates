@@ -1,10 +1,10 @@
 # Workspace arguments
 arguments:
   parameters:
-  - name: storage-prefix
-    displayName: Directory in default object storage
-    value: data
-    hint: Location of data and models in default object storage, will continuously sync to '/mnt/share'
+  - name: sync-directory
+    displayName: Directory to sync raw input and training output
+    value: workflow-data
+    hint: Location to sync raw input, models and checkpoints from default object storage. Note that this will be relative to the current namespace.
 containers:
 - name: cvat-db
   image: postgres:10-alpine
@@ -29,7 +29,7 @@ containers:
   - containerPort: 6379
     name: tcp
 - name: cvat
-  image: onepanel/cvat:v0.7.10-stable
+  image: onepanel/cvat:0.12.0_cvat.1.0.0-beta.2
   env:
   - name: DJANGO_MODWSGI_EXTRA_ARGS
     value: ""
@@ -41,6 +41,8 @@ containers:
     value: localhost
   - name: CVAT_SHARE_URL
     value: /home/django/data
+  - name: ONEPANEL_SYNC_DIRECTORY
+    value: '{{workspace.parameters.sync-directory}}'
   ports:
   - containerPort: 8080
     name: http
@@ -59,21 +61,21 @@ containers:
     mountPath: /etc/onepanel
     readOnly: true
 - name: cvat-ui
-  image: onepanel/cvat-ui:v0.7.10-stable
+  image: onepanel/cvat-ui:0.12.0_cvat.1.0.0-beta.2
   ports:
   - containerPort: 80
     name: http
 # You can add multiple FileSyncer sidecar containers if needed
 - name: filesyncer
-  # Use :s3 or :gcs depending on your storage provider
   image: onepanel/filesyncer:s3
+  imagePullPolicy: Always
   args:
   - download
   env:
   - name: FS_PATH
     value: /mnt/share
   - name: FS_PREFIX
-    value: '{{workspace.parameters.storage-prefix}}'
+    value: '{{workflow.namespace}}/{{workspace.parameters.sync-directory}}'
   volumeMounts:
   - name: share
     mountPath: /mnt/share
@@ -92,7 +94,7 @@ ports:
 routes:
 - match:
   - uri:
-      regex: /api/.*|/git/.*|/tensorflow/.*|/auto_annotation/.*|/analytics/.*|/static/.*|/admin/.*|/documentation/.*|/dextr/.*|/reid/.*
+      regex: /api/.*|/git/.*|/tensorflow/.*|/onepanelio/.*|/tracking/.*|/auto_annotation/.*|/analytics/.*|/static/.*|/admin/.*|/documentation/.*|/dextr/.*|/reid/.*
   - queryParams:
       id:
         regex: \d+.*
