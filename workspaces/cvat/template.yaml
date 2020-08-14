@@ -4,7 +4,7 @@ arguments:
   - name: sync-directory
     displayName: Directory to sync raw input and training output
     value: workflow-data
-    hint: Location to sync raw input data and models in default object storage, will continuously sync to '/mnt/share'. Note that this will be relative to the current namespace.
+    hint: Location to sync raw input, models and checkpoints from default object storage. Note that this will be relative to the current namespace.
 containers:
 - name: cvat-db
   image: postgres:10-alpine
