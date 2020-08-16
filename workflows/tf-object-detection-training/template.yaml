@@ -9,20 +9,24 @@ arguments:
   - name: trainingsource
     value: https://github.com/onepanelio/cvat-training.git
     type: hidden
+    visibility: private
 
   - name: revision
     value: v1.13.0
     type: hidden 
+    visibility: private
 
   - name: sys-annotation-path
     value: annotation-dump/sample_dataset
     displayName: Dataset path
     hint: Path to annotated data in default object storage (i.e S3). In CVAT, this parameter will be pre-populated.
+    visibility: private
 
   - name: sys-output-path
     value: workflow-data/output/sample_output
     hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
     displayName: Workflow output path
+    visibility: private
 
   - name: ref-model
     value: frcnn-res50-coco
