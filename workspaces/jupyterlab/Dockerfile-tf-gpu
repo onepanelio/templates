@@ -1,5 +1,5 @@
 ARG CONTAINER_TAG=latest
-ARG BASE_CONTAINER=onepanel/jupyterlab-base:$CONTAINER_TAG
+ARG BASE_CONTAINER=onepanel/opencv-base:$CONTAINER_TAG
 FROM $BASE_CONTAINER
 
 LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
