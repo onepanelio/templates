@@ -2,32 +2,17 @@
 containers:
 - name: jupyterlab-tensorflow
   image: jupyter/tensorflow-notebook
-  command: [start.sh, jupyter]
+  command: ["/bin/bash", "-c", "mkdir /logs; tensorboard --host 0.0.0.0 --logdir logs & start.sh jupyter lab --LabApp.token='' --LabApp.allow_remote_access=True --LabApp.allow_origin=\"*\" --LabApp.disable_check_xsrf=True --LabApp.trust_xheaders=True --LabApp.base_url=/ --LabApp.tornado_settings='{\"headers\":{\"Content-Security-Policy\":\"frame-ancestors * \'self\'\"}}' --notebook-dir='/data' --allow-root"]
   workingDir: /data
   env:
     - name: tornado
       value: "{ 'headers': { 'Content-Security-Policy': \"frame-ancestors * 'self'\" }  }"
-    - name: GRANT_SUDO
-      value: 1
-    - name: CHOWN_EXTRA
-      value: '/data'
-    - name: CHOWN_EXTRA_OPTS
-      value: '-R'
-  securityContext:
-    runAsUser: 0
-    allowPrivilegeEscalation: false
   args:
-    - lab
-    - --LabApp.token=''
-    - --LabApp.allow_remote_access=True
-    - --LabApp.allow_origin="*"
-    - --LabApp.disable_check_xsrf=True
-    - --LabApp.trust_xheaders=True
-    - --LabApp.tornado_settings=$(tornado)
-    - --NotebookApp.notebook_dir='/data'
   ports:
   - containerPort: 8888
     name: jupyterlab
+  - containerPort: 6006
+    name: tensorboard
   # Volumes to be mounted in this container
   # Onepanel will automatically create these volumes and mount them to the container
   volumeMounts:
@@ -39,8 +24,19 @@ ports:
   port: 80
   protocol: TCP
   targetPort: 8888
+- name: tensorboard
+  port: 6006
+  protocol: TCP
+  targetPort: 6006
 # Routes that will map to ports
 routes:
+- match:
+    - uri:
+        prefix: /tensorboard
+  route:
+    - destination:
+        port:
+          number: 6006
 - match:
   - uri:
       prefix: /
