@@ -104,7 +104,7 @@ RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-py38_${MINICONDA
 # files across image layers when the permissions change
 RUN pip3 --no-cache-dir install wheel setuptools 'notebook==6.0.3' \
     'jupyterhub==1.1.0' \
-    'jupyterlab==2.1.5' && \
+    'jupyterlab>=2.2,<3.0.0a0' && \
     jupyter notebook --generate-config && \
     rm -rf /home/$NB_USER/.cache/yarn && \
     fix-permissions /home/$NB_USER
