@@ -13,6 +13,9 @@ var (
 	Action   string
 	Interval string
 	Config 	 *artifactRepositoryProviderConfig
+	StatusFilePath string // where we keep statistics about file uploads/downloads
+	ServerURL string // where we run the server. E.g. localhost:8888
+	Status *SyncStatus // keeps track of the status of file uploads/downloads
 )
 
 const (
