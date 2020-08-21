@@ -52,7 +52,7 @@ arguments:
   
   - name: hyperparameters
     value: |-
-      epochs=1000
+      num-steps=10000
     displayName: Hyperparameters
     visibility: public
     type: textarea.textarea
