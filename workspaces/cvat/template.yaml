@@ -29,7 +29,7 @@ containers:
   - containerPort: 6379
     name: tcp
 - name: cvat
-  image: onepanel/cvat:0.12.0-rc.5_cvat.1.0.0
+  image: onepanel/cvat:0.12.0-rc.6_cvat.1.0.0
   env:
   - name: DJANGO_MODWSGI_EXTRA_ARGS
     value: ""
