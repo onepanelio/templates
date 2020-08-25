@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 )
 
 func help(error string, flags *flag.FlagSet) {
@@ -48,6 +49,7 @@ func main() {
 	flags.StringVar(&util.Interval, "interval", "", "Sync interval in seconds")
 	flags.StringVar(&util.StatusFilePath, "status-path", path.Join(".status", "status.txt"), "Location of file that keeps track of statistics for file uploads/downloads")
 	flags.StringVar(&util.ServerURL, "host", "localhost:8888", "URL that you want the server to run")
+	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
 	flags.Parse(os.Args[2:])
 
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
@@ -121,15 +123,15 @@ func main() {
 	spec := fmt.Sprintf("@every %ss", util.Interval)
 	switch util.Provider {
 	case "az":
-		az.Sync()
+		go az.Sync()
 		c.AddFunc(spec, az.Sync)
 	case "gcs":
-		gcs.Sync()
+		go gcs.Sync()
 		c.AddFunc(spec, gcs.Sync)
 	case "s3":
 		fallthrough
 	default:
-		s3.Sync()
+		go s3.Sync()
 		c.AddFunc(spec, s3.Sync)
 	}
 
@@ -155,12 +157,24 @@ func getSyncStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
+	relativeEndpoint := r.URL.Path
+	if strings.HasPrefix(r.URL.Path, util.ServerURLPrefix) {
+		relativeEndpoint = r.URL.Path[len(util.ServerURLPrefix):]
+	}
+	log.Printf("Miss [endpoint] %v. Relative: %v", r.URL.Path, relativeEndpoint)
+	log.Printf("RequestURI %v. ServerURLPrefix %v", r.URL.Path, util.ServerURLPrefix)
+
+	w.WriteHeader(http.StatusNotFound)
+}
+
 // startServer starts a server that provides information about the file sync status.
 func startServer() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/status", getSyncStatus)
+	mux.HandleFunc(util.ServerURLPrefix + "/api/status", getSyncStatus)
+	mux.HandleFunc("/", handleUnsupportedEndpoint)
 
-	fmt.Printf("Starting server at %s\n", util.ServerURL)
+	fmt.Printf("Starting server at %s. Prefix: %v\n", util.ServerURL, util.ServerURLPrefix)
 	err := http.ListenAndServe(util.ServerURL, mux)
 	log.Printf("%v", err)
 }

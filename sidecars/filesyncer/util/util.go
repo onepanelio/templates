@@ -15,6 +15,7 @@ var (
 	Config 	 *artifactRepositoryProviderConfig
 	StatusFilePath string // where we keep statistics about file uploads/downloads
 	ServerURL string // where we run the server. E.g. localhost:8888
+	ServerURLPrefix string // prefix for all the api endpoints
 	Status *SyncStatus // keeps track of the status of file uploads/downloads
 )
 
