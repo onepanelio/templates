@@ -73,6 +73,7 @@ containers:
     name: http
 # You can add multiple FileSyncer sidecar containers if needed
 - name: filesyncer
+  # Replace s3 with gcs if you are using GCS
   image: onepanel/filesyncer:s3
   imagePullPolicy: Always
   args:
