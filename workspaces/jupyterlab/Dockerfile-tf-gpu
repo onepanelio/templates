@@ -31,6 +31,7 @@ RUN DEBIAN_FRONTEND=noninteractive sudo apt update && \
     bazel build //tensorflow/tools/pip_package:build_pip_package && \
     ./bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg && \
     /usr/bin/pip3 --no-cache-dir install /tmp/tensorflow_pkg/*.whl && \
+    pip3 --no-cache-dir install /tmp/tensorflow_pkg/*.whl && \
     cd /home/root && \
     rm -rf /home/root/tensorflow && \
     npm cache clean --force && \
