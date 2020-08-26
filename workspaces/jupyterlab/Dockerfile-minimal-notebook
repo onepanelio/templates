@@ -1,0 +1,41 @@
+# https://github.com/jupyter/docker-stacks/blob/master/minimal-notebook/Dockerfile
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+ARG CONTAINER_TAG=latest
+ARG BASE_CONTAINER=onepanel/base-notebook:$CONTAINER_TAG
+FROM $BASE_CONTAINER
+
+LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
+
+USER root
+
+# Install all OS dependencies for fully functional notebook server
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    curl \
+    build-essential \
+    emacs-nox \
+    vim-tiny \
+    git \
+    inkscape \
+    jed \
+    libsm6 \
+    libxext-dev \
+    libxrender1 \
+    lmodern \
+    netcat \
+    python-dev \
+    # ---- nbconvert dependencies ----
+    texlive-xetex \
+    texlive-fonts-recommended \
+    texlive-plain-generic \
+    # ----
+    tzdata \
+    unzip \
+    nano \
+    && apt-get clean \
+    && apt-get autoremove \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/archives/*
+
+# Switch back to jovyan to avoid accidental container runs as root
+USER $NB_UID

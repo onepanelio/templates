@@ -1,0 +1,29 @@
+ARG CONTAINER_TAG=latest
+ARG BASE_CONTAINER=onepanel/scipy-notebook:$CONTAINER_TAG
+FROM $BASE_CONTAINER
+
+LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
+
+#Do not switch out root user, want to run as root.
+USER root
+
+RUN /usr/bin/pip3 --no-cache-dir install --upgrade jupyterlab-git && \
+    /usr/bin/pip3 --no-cache-dir install --upgrade nbdime && \
+    /usr/bin/pip3 --no-cache-dir install --upgrade tensorboard && \
+    /usr/bin/pip3 --no-cache-dir install --upgrade numpy && \
+    /usr/bin/pip3 --no-cache-dir install --upgrade python-language-server[all] && \
+    pip3 --no-cache-dir install --upgrade jupyterlab-git && \
+    pip3 --no-cache-dir install --upgrade nbdime && \
+    pip3 --no-cache-dir install --upgrade tensorboard && \
+    pip3 --no-cache-dir install --upgrade numpy && \
+    pip3 --no-cache-dir install --upgrade python-language-server[all] && \
+    conda install --quiet --yes python-language-server[all] && \
+    jupyter labextension install @jupyterlab/github && \
+    jupyter labextension install @jupyterlab/debugger && \
+    jupyter labextension install @krassowski/jupyterlab-lsp && \
+    jupyter lab build -y && \
+    jupyter lab clean -y && \
+    npm cache clean --force && \
+    rm -rf "/home/${NB_USER}/.cache/yarn" && \
+    rm -rf "/home/${NB_USER}/.node-gyp" && \
+    fix-permissions "/home/${NB_USER}"
