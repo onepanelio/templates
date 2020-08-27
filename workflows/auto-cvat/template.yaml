@@ -6,7 +6,7 @@ arguments:
     displayName: CVAT Workspace name
     value: 'My CVAT Workspace'
   - name: workspace-template-uid
-    value: 'cvat-with-syncer'
+    value: 'cvat'
     type: hidden
   - name: workspace-node-pool
     displayName: CVAT Workspace node pool
