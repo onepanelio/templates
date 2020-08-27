@@ -125,10 +125,12 @@ templates:
           try:
               workspace = api_instance.create_workspace(namespace, body)
               uid = workspace.uid
+              
+              print('Waiting for workspace to launch...\n')
               while workspace.status.phase != 'Running':
                   workspace = api_instance.get_workspace(namespace, uid)
                   sleep(15)
-                  
+              print('Workspace is running at %s.\n' % workspace.url)
                   
               # Write the data to the file so we can use it as a parameter in the workflow
               with open("/tmp/task.txt", "w+") as f:
