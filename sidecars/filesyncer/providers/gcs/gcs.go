@@ -23,5 +23,17 @@ func Sync() {
 	if util.Action == util.ActionUpload {
 		cmd = util.Command("gsutil", "-m", "rsync", "-d", "-r", util.Path, uri)
 	}
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("[error] %v\n", err)
+	}
+
+	if util.Action == util.ActionDownload {
+		util.Status.MarkLastDownload()
+	}
+	if util.Action == util.ActionUpload  {
+		util.Status.MarkLastUpload()
+	}
+	if err := util.SaveSyncStatus(); err != nil {
+		fmt.Printf("[error] save sync status: Message %v\n", err)
+	}
 }

@@ -33,5 +33,17 @@ func Sync() {
 		cmd = util.Command("aws", "s3", "sync", "--delete", util.Path, uri)
 	}
 	resolveEnv(cmd)
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("[error] %v\n", err)
+	}
+
+	if util.Action == util.ActionDownload {
+		util.Status.MarkLastDownload()
+	}
+	if util.Action == util.ActionUpload  {
+		util.Status.MarkLastUpload()
+	}
+	if err := util.SaveSyncStatus(); err != nil {
+		fmt.Printf("[error] save sync status: Message %v\n", err)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"sigs.k8s.io/yaml"
 )
 
@@ -62,7 +63,8 @@ func injectS3Credentials(config *artifactRepositoryProviderConfig) error {
 }
 
 func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
-	content, err := ioutil.ReadFile(ConfigLocation + "/artifactRepository")
+	configFilePath := path.Join(ConfigLocation, "artifactRepository")
+	content, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +72,9 @@ func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
 	var config *artifactRepositoryProviderConfig
 	if yaml.Unmarshal(content, &config); err != nil {
 		return nil, err
+	}
+	if config == nil {
+		return nil, fmt.Errorf("config file path: '%v' does not have any content", configFilePath)
 	}
 
 	if config.S3 != nil {
