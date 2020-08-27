@@ -4,12 +4,14 @@ arguments:
   parameters:
   - name: workspace-name
     displayName: CVAT Workspace name
+    # User can change to CVAT Workspace name you want to use
     value: 'My CVAT Workspace'
   - name: workspace-template-uid
     value: 'cvat'
     type: hidden
   - name: workspace-node-pool
     displayName: CVAT Workspace node pool
+    # Change to node pool value for your provider
     value: Standard_NC6
   - name: cvat-task-name
     displayName: CVAT task name
@@ -17,6 +19,7 @@ arguments:
   - name: cvat-task-labels
     displayName: CVAT task labels
     type: textarea.textarea
+    # User can hange to actual labels that you will be using for task
     value: |
       [
         {
@@ -27,11 +30,13 @@ arguments:
         }
       ]
   - name: sync-directory	
-    displayName: Directory to sync raw input and training output	
+    displayName: Directory to sync raw input and training output
+    # User can change to directory in object storage that will be used for raw input and model storage
     value: workflow-data	
     hint: Location to sync raw input, models and checkpoints from default object storage. Note that this will be relative to the current namespace.	
   - name: input-directory	
     displayName: Raw input directory	
+    # User can change to directory relative to sync directory that contains all the files you want to use in CVAT task
     value: raw-input/100MEDIA
     hint: Location of input directory relative to sync directory above.
 
