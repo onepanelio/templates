@@ -42,7 +42,7 @@ func main() {
 	util.Action = os.Args[1]
 
 	flags := flag.NewFlagSet(util.Action, flag.ExitOnError)
-	flags.StringVar(&util.Provider, "provider", "s3", "Storage provider: s3 (default), az or gcs")
+	flags.StringVar(&util.Provider, "provider", "", "Storage provider: s3 (default), az or gcs")
 	flags.StringVar(&util.Path, "path", "", "Path to local directory")
 	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
 	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
