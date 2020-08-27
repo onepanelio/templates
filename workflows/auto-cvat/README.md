@@ -1,3 +1,3 @@
 ## auto-cvat
 
-This is a sample template which starts a CVAT workspace and then downloads files from an s3 prefix, and starts a task with those files.
+This is an example Workflow Template which starts a CVAT Workspace, downloads files from an object storage location, and creates a CVAT task using these files and labels provided as parameters.
