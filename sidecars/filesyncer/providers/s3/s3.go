@@ -35,6 +35,7 @@ func Sync() {
 	resolveEnv(cmd)
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("[error] %v\n", err)
+		return
 	}
 
 	if util.Action == util.ActionDownload {
