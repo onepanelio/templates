@@ -3,6 +3,7 @@ package util
 import (
 	"os"
 	"os/exec"
+	"time"
 )
 
 var (
@@ -17,6 +18,7 @@ var (
 	ServerURL string // where we run the server. E.g. localhost:8888
 	ServerURLPrefix string // prefix for all the api endpoints
 	Status *SyncStatus // keeps track of the status of file uploads/downloads
+	InitialDelay time.Duration // initial delay before app starts cron to sync files. In seconds.
 )
 
 const (
