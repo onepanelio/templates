@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 func help(error string, flags *flag.FlagSet) {
@@ -50,6 +51,7 @@ func main() {
 	flags.StringVar(&util.StatusFilePath, "status-path", path.Join(".status", "status.txt"), "Location of file that keeps track of statistics for file uploads/downloads")
 	flags.StringVar(&util.ServerURL, "host", "localhost:8888", "URL that you want the server to run")
 	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
+	flags.DurationVar(&util.InitialDelay, "initial-delay", 30 * time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
 	flags.Parse(os.Args[2:])
 
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
@@ -118,6 +120,10 @@ func main() {
 	}
 
 	go startServer()
+
+	fmt.Printf("Sleeping for  %v\n", util.InitialDelay)
+	time.Sleep(util.InitialDelay)
+	fmt.Printf("Done sleeping.\n")
 
 	c := cron.New()
 	spec := fmt.Sprintf("@every %ss", util.Interval)
