@@ -217,7 +217,7 @@ templates:
       
       print('Processing files...\n')
       
-      workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8080'
+      workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8888'
       
       conn = http.client.HTTPConnection(workspace_url)
       headers = {
@@ -243,6 +243,9 @@ templates:
             pass
       
 
+      workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8080'
+      conn = http.client.HTTPConnection(workspace_url)
+      
       data_url = '/api/v1/tasks/{{inputs.parameters.task-id}}/data'
       params = urllib.parse.urlencode({
           'image_quality': 70, 
