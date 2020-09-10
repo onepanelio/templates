@@ -1,11 +1,8 @@
-# https://github.com/jupyter/docker-stacks/blob/master/minimal-notebook/Dockerfile
-# Copyright (c) Jupyter Development Team.
-# Distributed under the terms of the Modified BSD License.
 ARG CONTAINER_TAG=latest
 ARG BASE_CONTAINER=onepanel/base-notebook:$CONTAINER_TAG
 FROM $BASE_CONTAINER
 
-LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
+LABEL maintainer="Onepanel, Inc. <support@onepanel.io>"
 
 USER root
 
