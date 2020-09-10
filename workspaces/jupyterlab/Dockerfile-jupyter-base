@@ -2,7 +2,7 @@ ARG CONTAINER_TAG=latest
 ARG BASE_CONTAINER=onepanel/scipy-notebook:$CONTAINER_TAG
 FROM $BASE_CONTAINER
 
-LABEL maintainer="OnepanelIO <aleksandr@onepanel.io>"
+LABEL maintainer="Onepanel, Inc. <support@onepanel.io>"
 
 #Do not switch out root user, want to run as root.
 USER root
