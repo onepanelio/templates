@@ -197,7 +197,6 @@ templates:
     command: [python, '-u'] 
     source: |
       import os
-      import subprocess
       import sys
       import http.client
       import json
