@@ -204,13 +204,6 @@ templates:
       import urllib.parse
       import time
       
-      # Install onepanel-sdk
-      subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'onepanel-sdk==0.12.0rc0'])
-      
-      import onepanel.core.api
-      from onepanel.core.api.rest import ApiException
-      from onepanel.core.api.models import Parameter
-      
       # Get mounted service account token to use as API Key
       with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
           token = f.read()
