@@ -239,10 +239,24 @@ templates:
       conn = http.client.HTTPConnection(workspace_url)
       
       data_url = '/api/v1/tasks/{{inputs.parameters.task-id}}/data'
+      
+      file_path = '{{workflow.parameters.input-directory}}'
+      
+      if file_path and file_path[0] == '/':
+        file_path = file_path[1:]
+
+      if file_path and file_path[-1] == '/':
+        file_path = file_path[:-1]
+        
+      file_path = '/' + file_path + '/'
+      
+      if file_path == '//':
+        file_path = '/'
+      
       params = urllib.parse.urlencode({
           'image_quality': 70, 
           'use-zip-chunks': True, 
-          'server_files[0]': '/{{workflow.parameters.input-directory}}/'
+          'server_files[0]': file_path
       })
       
       headers = {
@@ -251,6 +265,8 @@ templates:
           'Content-type': 'application/x-www-form-urlencoded',
       }
       
+      # Sleep for a little bit to make sure cvat finishes any processing
+      time.sleep(60)
       conn.request('POST', data_url, params, headers)
       res = conn.getresponse()
       data = res.read()
