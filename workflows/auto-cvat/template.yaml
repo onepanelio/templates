@@ -37,22 +37,22 @@ arguments:
   - name: input-directory	
     displayName: Raw input directory	
     # User can change to directory relative to sync directory that contains all the files you want to use in CVAT task
-    value: raw-input/100MEDIA
+    value: raw-input
     hint: Location of input directory relative to sync directory above.
 
-  - name: sys-data-volume-size
-    hint: Disk size in MB for volume mounted at `/home/django/data`
-    required: true
-    type: input.number
-    displayName: Disk size for "data"
-    value: "20480"
-    
   - name: sys-share-volume-size
-    displayName: Disk size for "share"
-    hint: Disk size in MB for volume mounted at `/home/django/share`
+    displayName: Disk size for your data
+    hint: Disk size in MB for volume that store raw input data and custom pre-annotation models, make sure this is at least twice as large as your "Raw input directory" data
     required: true
     type: input.number
     value: "20480"  
+    
+  - name: sys-data-volume-size
+    hint: Disk size in MB for volume that stores CVAT data, make this at least 50% larger than the disk size above
+    required: true
+    type: input.number
+    displayName: Disk size for CVAT data
+    value: "30720"
     
 templates:
 - name: main
