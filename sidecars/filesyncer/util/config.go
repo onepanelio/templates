@@ -8,8 +8,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const ConfigLocation = "/etc/onepanel"
-
 // artifactRepositorySecret defines the structure for secret references
 type artifactRepositorySecret struct {
 	Key  string
@@ -70,7 +68,7 @@ func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
 	}
 
 	var config *artifactRepositoryProviderConfig
-	if yaml.Unmarshal(content, &config); err != nil {
+	if err = yaml.Unmarshal(content, &config); err != nil {
 		return nil, err
 	}
 	if config == nil {
