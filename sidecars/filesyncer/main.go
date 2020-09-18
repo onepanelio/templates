@@ -48,9 +48,10 @@ func main() {
 	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
 	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
 	flags.StringVar(&util.Interval, "interval", "", "Sync interval in seconds")
-	flags.StringVar(&util.StatusFilePath, "status-path", path.Join(".status", "status.txt"), "Location of file that keeps track of statistics for file uploads/downloads")
+	flags.StringVar(&util.StatusFilePath, "status-path", path.Join(".status", "status.json"), "Location of file that keeps track of statistics for file uploads/downloads")
 	flags.StringVar(&util.ServerURL, "host", "localhost:8888", "URL that you want the server to run")
 	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
+	flags.StringVar(&util.ConfigLocation, "config-path", "/etc/onepanel", "The location of config files. A file named artifactRepository is expected to be here.")
 	flags.DurationVar(&util.InitialDelay, "initial-delay", 30 * time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
 	flags.Parse(os.Args[2:])
 
@@ -145,21 +146,15 @@ func main() {
 }
 
 // getSyncStatus returns the util.Status in JSON form
-// If there is no content, a 204 is returned
 func getSyncStatus(w http.ResponseWriter, r *http.Request) {
-	if util.Status.Empty() {
-		w.WriteHeader(http.StatusNoContent)
+	data, err := json.Marshal(util.Status)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
-	} else {
-		data, err := json.Marshal(util.Status)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("content-type", "application/json")
-		if _, err := io.WriteString(w, string(data)); err != nil {
-			fmt.Printf("[error] %v\n", err)
-		}
+	}
+	w.Header().Set("content-type", "application/json")
+	if _, err := io.WriteString(w, string(data)); err != nil {
+		fmt.Printf("[error] %v\n", err)
 	}
 }
 

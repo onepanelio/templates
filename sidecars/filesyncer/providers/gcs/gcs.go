@@ -9,6 +9,16 @@ import (
 
 
 func Sync() {
+	// Make sure we don't run more than once sync at a time.
+	util.Mux.Lock()
+	if util.Syncing {
+		util.Mux.Unlock()
+		return
+	} else {
+		util.Syncing = true
+		util.Mux.Unlock()
+	}
+
 	var cmd *exec.Cmd
 
 	// Activate service account
@@ -23,8 +33,10 @@ func Sync() {
 	if util.Action == util.ActionUpload {
 		cmd = util.Command("gsutil", "-m", "rsync", "-d", "-r", util.Path, uri)
 	}
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("[error] %v\n", err)
+
+	util.Status.ClearError()
+	if err := util.RunCommand(cmd); err != nil {
+		util.Status.ReportError(err)
 		return
 	}
 
@@ -37,4 +49,8 @@ func Sync() {
 	if err := util.SaveSyncStatus(); err != nil {
 		fmt.Printf("[error] save sync status: Message %v\n", err)
 	}
+
+	util.Mux.Lock()
+	util.Syncing = false
+	util.Mux.Unlock()
 }

@@ -10,6 +10,8 @@ import (
 type SyncStatus struct {
 	LastUpload *time.Time
 	LastDownload *time.Time
+	Error *string
+	PreviousError *string
 }
 
 // MarkLastUpload sets the last upload time to now
@@ -22,6 +24,32 @@ func (s *SyncStatus) MarkLastUpload() {
 func (s *SyncStatus) MarkLastDownload() {
 	now := time.Now().UTC()
 	s.LastDownload = &now
+}
+
+// ReportError sets the Error field on SyncStatus
+// if there is already an error, the current error is moved into PreviousError
+func (s *SyncStatus) ReportError(err error) {
+	if s.Error != nil {
+		s.PreviousError = s.Error
+	}
+
+	errMsg := err.Error()
+	s.Error = &errMsg
+}
+
+// ClearError clears out the current error. It is moved to previous error.
+func (s *SyncStatus) ClearError() {
+	if s.Error != nil {
+		s.PreviousError = s.Error
+	}
+
+	s.Error = nil
+}
+
+// ClearErrors clears out all of the errors including current and previous
+func (s *SyncStatus) ClearErrors() {
+	s.Error = nil
+	s.PreviousError = nil
 }
 
 // Empty returns true if s is nil or none of it's fields are set

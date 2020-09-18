@@ -24,6 +24,16 @@ func resolveEnv(cmd *exec.Cmd) {
 }
 
 func Sync() {
+	// Make sure we don't run more than once sync at a time.
+	util.Mux.Lock()
+	if util.Syncing {
+		util.Mux.Unlock()
+		return
+	} else {
+		util.Syncing = true
+		util.Mux.Unlock()
+	}
+
 	var cmd *exec.Cmd
 	uri := fmt.Sprintf("s3://%v/%v", util.Bucket, util.Prefix)
 	if util.Action == util.ActionDownload {
@@ -33,8 +43,10 @@ func Sync() {
 		cmd = util.Command("aws", "s3", "sync", "--delete", util.Path, uri)
 	}
 	resolveEnv(cmd)
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("[error] %v\n", err)
+
+	util.Status.ClearError()
+	if err := util.RunCommand(cmd); err != nil {
+		util.Status.ReportError(err)
 		return
 	}
 
@@ -47,4 +59,8 @@ func Sync() {
 	if err := util.SaveSyncStatus(); err != nil {
 		fmt.Printf("[error] save sync status: Message %v\n", err)
 	}
+
+	util.Mux.Lock()
+	util.Syncing = false
+	util.Mux.Unlock()
 }
