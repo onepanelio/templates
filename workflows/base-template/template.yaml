@@ -130,7 +130,7 @@ templates:
     command:
     - sh
     - -c
-    image: '{{workflow.parameters.tf-image}}'
+    image: '{{workflow.parameters.docker-image}}'
     volumeMounts:
     - mountPath: /mnt/data
       name: data
