@@ -21,7 +21,7 @@ arguments:
     value: annotation-dump/sample_dataset
     hint: Path to annotated data in default object storage (i.e S3). In CVAT, this parameter will be pre-populated.
     displayName: Dataset path
-    visibility: private
+    visibility: internal
     
   # Output path for this workflow
   # The value will be automatically populated by CVAT, if you will run this from CVAT.
@@ -29,7 +29,7 @@ arguments:
     value: workflow-data/output/sample_output
     hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
     displayName: Workflow output path
-    visibility: private
+    visibility: internal
   
   # Path to checkpoint
   # Since Onepanel has a filesyncer, all possible values will be displayed in the CVAT
@@ -45,7 +45,7 @@ arguments:
     displayName: Number of classes
     hint: Number of classes (i.e in CVAT taks) + 1 for background
     value: 81
-    visibility: private
+    visibility: internal
     
   # A set of hyperparameters used by the source code
   - name: hyperparameters

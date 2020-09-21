@@ -10,13 +10,13 @@ arguments:
     value: annotation-dump/sample_dataset
     hint: Path to annotated data in default object storage (i.e S3). In CVAT, this parameter will be pre-populated.
     displayName: Dataset path
-    visibility: private
+    visibility: internal
     
   - name: cvat-output-path
     value: workflow-data/output/sample_output
     hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
     displayName: Workflow output path
-    visibility: private
+    visibility: internal
 
   - name: cvat-finetune-checkpoint
     value: ''
@@ -28,7 +28,7 @@ arguments:
     displayName: Number of classes
     hint: Number of classes (i.e in CVAT taks) + 1 for background
     value: 81
-    visibility: private
+    visibility: internal
     
   - name: hyperparameters
     displayName: Hyperparameters

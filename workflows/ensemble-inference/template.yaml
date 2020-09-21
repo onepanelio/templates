@@ -9,7 +9,7 @@ arguments:
   - name: cvat-annotation-path
     value: annotation-dump/test-workflow-4/test/
     displayName: Path to dataset
-    visibility: private
+    visibility: internal
 
   # Which ensemble strategy to use
   - name: ensemble-option
@@ -18,7 +18,7 @@ arguments:
   # Where to store the output files
   - name: cvat-output-path
     value: workflow-data/output/test-workflow-4/model-comparison66/
-    visibility: private
+    visibility: internal
   
   # Dump format for CVAT. The code has been written to accept data in COCO format, so select cvat_coco.
   # Having a correct dump-format in a template ensures that you don't have to select in the CVAT.
@@ -138,6 +138,8 @@ templates:
       - name: model
         path: /mnt/output
         optional: true
+        # if you want to store output on cloud storage, you should replace following lines with
+        # s3 or gcs as shown above.
         archive:
           none: {}
     container:
