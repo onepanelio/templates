@@ -41,6 +41,9 @@ arguments:
   
   # Number of classes
   # If you run this from CVAT, it will automatically populate this field based on number of labels in the given CVAT task.
+  # Note: MaskRCNN requires an extra class for background, so CVAT adds that one whenever workflow's name == "maskrcnn-training".
+  # You workflow name will be different, so this won't work out of the box.
+  # Most probably you will have your own source code, so this won't be a problem.
   - name: cvat-num-classes
     displayName: Number of classes
     hint: Number of classes (i.e in CVAT taks) + 1 for background
