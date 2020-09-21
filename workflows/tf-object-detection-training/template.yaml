@@ -20,13 +20,13 @@ arguments:
     value: annotation-dump/sample_dataset
     displayName: Dataset path
     hint: Path to annotated data in default object storage (i.e S3). In CVAT, this parameter will be pre-populated.
-    visibility: private
+    visibility: internal
 
   - name: cvat-output-path
     value: workflow-data/output/sample_output
     hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
     displayName: Workflow output path
-    visibility: private
+    visibility: internal
 
   - name: cvat-model
     value: frcnn-res50-coco
@@ -68,7 +68,7 @@ arguments:
     value: 81
     hint: Number of classes
     displayName: Number of classes
-    visibility: private
+    visibility: internal
 
   - name: tf-image
     value: tensorflow/tensorflow:1.13.1-py3

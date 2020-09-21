@@ -1,0 +1,183 @@
+arguments:
+  parameters:
+
+  # Following are a list of parameters that might change based on user response.
+  # some of these parameters are prefixed with cvat- to denote that they are special parameters and will be automatically populated by CVAT.
+  # you can change the names, but changing names of special parameters might break the workflow.
+
+  # Path to input data for this workflow
+  - name: cvat-annotation-path
+    value: annotation-dump/test-workflow-4/test/
+    displayName: Path to dataset
+    visibility: internal
+
+  # Which ensemble strategy to use
+  - name: ensemble-option
+    value: unanimous
+    visibility: public
+    type: select.select
+    displayName: Ensemble strategy
+    hint: Select the ensemble strategy to use
+    options:
+    - name: 'Consensus'
+      value: 'consensus'
+    - name: 'Unanimous'
+      value: 'unanimous'
+    - name: 'Affirmative'
+      value: 'affirmative'
+  
+  # Where to store the output files
+  - name: cvat-output-path
+    value: workflow-data/output/test-workflow-4/model-comparison66/
+    visibility: internal
+  
+  # Dump format for CVAT. The code has been written to accept data in COCO format, so select cvat_coco.
+  # Having a correct dump-format in a template ensures that you don't have to select in the CVAT.
+  - name: dump-format
+    value: cvat_coco
+    displayName: CVAT dump format
+    visibility: public
+
+entrypoint: main
+templates:
+  - name: main
+    dag:
+      tasks:
+
+      # A sample preprocessing container where you preprocess your data.
+      # This does not do anything, but you can add your script to this container.
+      - name: process-input-data
+        template: bash
+
+      # First container to run prediction using YOLO.
+      - name: predict-yolo-model
+        dependencies: [process-input-data]
+        template: yolo
+
+      # Second container to run the inference.
+      - name: predict-retinanet-model
+        dependencies: [process-input-data]
+        template: retinanet
+
+      # Container which performs the ensembling.
+      - name: ensemble
+        dependencies: [predict-yolo-model, predict-retinanet-model]
+        template: ensemble
+   
+   # Retinanet container
+  - name: retinanet
+    inputs:
+      artifacts:
+      - name: src
+        path: /mnt/src
+        git:
+          repo: "https://github.com/onepanelio/ensembleObjectDetection.git"
+      - name: data
+        path: /mnt/data/datasets/
+        s3:
+          key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+    outputs:
+      artifacts:
+      - name: model
+        path: /mnt/output
+        optional: true
+        s3:
+          key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
+    container:
+      image: onepanel/jupyterlab:1.0.1
+      command: [sh,-c]
+      args:
+      - |
+        apt update \
+        && apt install libgl1-mesa-glx ffmpeg libsm6 libxext6 libglib2.0-0 libxext6 libxrender-dev wget unzip git -y \
+        && bash setup.sh \
+        && pip install ./keras-retinanet/ --user \
+        && python TestTimeAugmentation/run.py --images_path=/mnt/data/datasets/images --models=retinanet --option={{workflow.parameters.ensemble-option}} --combine=False \
+      workingDir: /mnt/src
+  
+  # YOLO container
+  - name: yolo
+    inputs:
+      artifacts:
+      - name: src
+        path: /mnt/src
+        git:
+          repo: "https://github.com/onepanelio/ensembleObjectDetection.git"
+      - name: data
+        path: /mnt/data/datasets/
+        s3:
+          key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+    outputs:
+      artifacts:
+      - name: model
+        path: /mnt/output
+        optional: true
+        s3:
+          key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
+    container:
+      image: onepanel/jupyterlab:1.0.1
+      command: [sh,-c]
+      args:
+       - |
+        apt update \
+        && apt install libgl1-mesa-glx ffmpeg libsm6 libxext6 libglib2.0-0 libxext6 libxrender-dev wget unzip -y \
+        && bash setup.sh \
+        && python TestTimeAugmentation/run.py --images_path=/mnt/data/datasets/images --models=yolo_darknet --option={{workflow.parameters.ensemble-option}} --combine=False \
+      workingDir: /mnt/src
+      volumeMounts:
+      - name: output
+        mountPath: /mnt/output
+
+  # Ensemble container
+  - name: ensemble
+    inputs:
+      artifacts:
+      - name: src
+        path: /mnt/src
+        git:
+          repo:  "https://github.com/onepanelio/ensembleObjectDetection.git"
+      - name: data
+        path: /mnt/data/datasets/
+        s3:
+          key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}{{workflow.name}}'
+      - name: dataorig
+        path: /mnt/data/dataorig/
+        s3:
+          key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+    outputs:
+      artifacts:
+      - name: model
+        path: /mnt/output
+        optional: true
+        # if you want to store output on cloud storage, you should replace following lines with
+        # s3 or gcs as shown above.
+        archive:
+          none: {}
+    container:
+      image: onepanel/jupyterlab:1.0.1
+      command: [sh, -c]
+      args:
+       - |
+        apt update \
+        && apt install libgl1-mesa-glx ffmpeg libsm6 libxext6 libglib2.0-0 libxext6 libxrender-dev wget unzip -y \
+        && bash setup.sh \
+        && python TestTimeAugmentation/run.py --images_path=/mnt/data/datasets/ --models=yolo_darknet,retinanet --option={{workflow.parameters.ensemble-option}} --combine=True \
+      workingDir: /mnt/src
+
+  - name: bash
+    container:
+      args:
+      - sleep 15
+      command:
+      - bash
+      - -c
+      image: bash
+
+volumeClaimTemplates:
+  - metadata:
+      name: output
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
