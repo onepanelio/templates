@@ -67,10 +67,10 @@ arguments:
       
   # Docker image to use for this workflow
   # You can use any public image here (i.e PyTorch)
-  # The jupyterlab image from Onepanel has many dependencies pre-installed
+  # The jupyterlab image from Onepanel has latest TensorFlow, PyTorch and many dependencies pre-installed
   - name: docker-image
     visibility: public
-    value: onepanel/jupyterlab:1.0.1
+    value: tensorflow/tensorflow:1.13.1-py3
     type: select.select
     displayName: Select TensorFlow image
     hint: Select the GPU image if you are running on a GPU node pool
@@ -79,6 +79,8 @@ arguments:
       value: 'tensorflow/tensorflow:1.13.1-py3'
     - name: 'TensorFlow 1.13.1 GPU Image'
       value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
+    - name: 'Onepanel JupyterLab'
+      value: 'onepanel/jupyterlab:1.0.1'
   
   # Select a node for the workflow execution
   # In CVAT as well as Onepanel, it will be automatically populated based on your cluster settings.

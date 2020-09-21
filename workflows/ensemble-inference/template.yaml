@@ -14,6 +14,17 @@ arguments:
   # Which ensemble strategy to use
   - name: ensemble-option
     value: unanimous
+    visibility: public
+    type: select.select
+    displayName: Ensemble strategy
+    hint: Select the ensemble strategy to use
+    options:
+    - name: 'Consensus'
+      value: 'consensus'
+    - name: 'Unanimous'
+      value: 'unanimous'
+    - name: 'Affirmative'
+      value: 'affirmative'
   
   # Where to store the output files
   - name: cvat-output-path
