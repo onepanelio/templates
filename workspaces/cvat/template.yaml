@@ -110,7 +110,6 @@ routes:
   - destination:
       port:
         number: 8080
-  timeout: 600s
 - match:
   - uri:
       prefix: /
@@ -118,7 +117,6 @@ routes:
   - destination:
       port:
         number: 80
-  timeout: 600s
 # DAG Workflow to be executed once a Workspace action completes (optional)
 # Uncomment the lines below if you want to send Slack notifications
 #postExecutionWorkflow:
