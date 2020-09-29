@@ -44,7 +44,8 @@ COPY entrypoint.sh /usr/bin/entrypoint.sh
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 RUN rm /home/root/keyboard.conf
 RUN code-server --install-extension ms-python.python
+RUN mkdir /data
 
 EXPOSE 8080
-WORKDIR /home/root
+WORKDIR /data
 ENTRYPOINT ["/usr/bin/entrypoint.sh", "--bind-addr", "0.0.0.0:8080","--auth","none", "."]

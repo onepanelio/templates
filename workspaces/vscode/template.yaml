@@ -7,7 +7,7 @@ containers:
         name: vscode
     volumeMounts:
       - name: data
-        mountPath: /home/root/data
+        mountPath: /data
 ports:
   - name: vscode
     port: 8080
