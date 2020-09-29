@@ -21,9 +21,8 @@ containers:
   volumeMounts:
   - name: data
     mountPath: /data
-- name: vs-code
-  image: codercom/code-server
-  args: ["--auth", "none"]
+- name: vscode
+  image: onepanel/vscode:1.0.0
   ports:
   - containerPort: 8080
     name: vscode
