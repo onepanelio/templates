@@ -1,26 +1,58 @@
 containers:
-- name: vs-code
-  image: codercom/code-server:3.3.1
-  args: ["--auth", "none"]
-  ports:
-  - containerPort: 8080
-    name: http
-  volumeMounts:
-  - name: data
-    mountPath: /home/coder
+  - name: jupyterlab-tensorflow
+    image: jupyter/tensorflow-notebook
+    command: [start.sh, jupyter]
+    env:
+      - name: tornado
+        value: "{ 'headers': { 'Content-Security-Policy': \"frame-ancestors * 'self'\" }  }"
+    args:
+      - lab
+      - --LabApp.token=''
+      - --LabApp.allow_remote_access=True
+      - --LabApp.allow_origin="*"
+      - --LabApp.disable_check_xsrf=True
+      - --LabApp.trust_xheaders=True
+      - --LabApp.tornado_settings=$(tornado)
+      - --LabApp.base_url=/jupyter # this makes jupyter be okay with serving at /jupyter
+      - --notebook-dir='/data'
+    ports:
+      - containerPort: 8888
+        name: jupyterlab
+    volumeMounts:
+      - name: data
+        mountPath: /data
+  - name: vscode
+    image: onepanel/vscode:1.0.0
+    ports:
+      - containerPort: 8080
+        name: vscode
+    volumeMounts:
+      - name: data
+        mountPath: /home/root/data
 ports:
-- name: vscode
-  port: 80
-  protocol: TCP
-  targetPort: 8080 
+  - name: jupyterlab
+    port: 80
+    protocol: TCP
+    targetPort: 8888
+  - name: vscode
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
 routes:
-- match:
-  - uri:
-      prefix: /
-  route:
-  - destination:
-      port:
-        number: 80
+  - match:
+      - uri:
+          prefix: /jupyter
+    route:
+      - destination:
+          port:
+            number: 80
+  - match:
+      - uri:
+          prefix: / #vscode runs at the default route
+    route:
+      - destination:
+          port:
+            number: 8080
 # DAG Workflow to be executed once a Workspace action completes (optional)        
 #postExecutionWorkflow:
 #  entrypoint: main
