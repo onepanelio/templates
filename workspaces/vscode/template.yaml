@@ -23,6 +23,7 @@ containers:
         mountPath: /data
   - name: vscode
     image: onepanel/vscode:1.0.0
+    command: ["/bin/bash", "-c", "pip install onepanel-sdk && /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 --auth none ."]
     ports:
       - containerPort: 8080
         name: vscode
