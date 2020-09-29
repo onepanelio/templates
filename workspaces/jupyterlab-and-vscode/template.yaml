@@ -28,7 +28,7 @@ containers:
     name: vscode
   volumeMounts:
   - name: data
-    mountPath: /home/coder
+    mountPath: /home/root/data
 ports:
 - name: jupyterlab
   port: 80
