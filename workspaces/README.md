@@ -8,9 +8,6 @@ A brief description of each template follows.
 
 [CVAT](https://github.com/opencv/cvat) is a interactive video and image annotation tool for computer vision.
 
-## jupyterlab-and-vscode
-
-This template includes both JupyterLab and VSCode running on the same machine. 
 
 ## jupyterlab 
 

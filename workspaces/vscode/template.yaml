@@ -1,26 +1,26 @@
 containers:
-- name: vs-code
-  image: codercom/code-server:3.3.1
-  args: ["--auth", "none"]
-  ports:
-  - containerPort: 8080
-    name: http
-  volumeMounts:
-  - name: data
-    mountPath: /home/coder
+  - name: vscode
+    image: onepanel/vscode:1.0.0
+    command: ["/bin/bash", "-c", "pip install onepanel-sdk && /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 --auth none ."]
+    ports:
+      - containerPort: 8080
+        name: vscode
+    volumeMounts:
+      - name: data
+        mountPath: /data
 ports:
-- name: vscode
-  port: 80
-  protocol: TCP
-  targetPort: 8080 
+  - name: vscode
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
 routes:
-- match:
-  - uri:
-      prefix: /
-  route:
-  - destination:
-      port:
-        number: 80
+  - match:
+      - uri:
+          prefix: / #vscode runs at the default route
+    route:
+      - destination:
+          port:
+            number: 8080
 # DAG Workflow to be executed once a Workspace action completes (optional)        
 #postExecutionWorkflow:
 #  entrypoint: main
