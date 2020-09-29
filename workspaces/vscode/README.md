@@ -5,7 +5,7 @@ This Workspace uses the following images
 * [codercom/code-server](https://hub.docker.com/r/codercom/code-server)
 
 To Build
-- Make sure your current directory is `jupyterlab-and-vscode`
+- Make sure your current directory is `vscode`
 ```shell script
 docker build -t onepanel/vscode:1.0.0 .
 ```
