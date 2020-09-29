@@ -43,8 +43,7 @@ RUN ARCH="$(dpkg --print-architecture)" && \
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 RUN rm /home/root/keyboard.conf
-RUN code-server --install-extension ms-python.python \
-    && code-server --install-extension jithurjacob.nbpreviewer
+RUN code-server --install-extension ms-python.python
 
 EXPOSE 8080
 WORKDIR /home/root
