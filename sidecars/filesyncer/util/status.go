@@ -3,27 +3,32 @@ package util
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strings"
 	"time"
 )
 
 // SyncStatus keeps track of the timestamps when the last file operation occurred
 type SyncStatus struct {
-	LastUpload *time.Time
-	LastDownload *time.Time
-	Error *string
-	PreviousError *string
+	LastUpload             *time.Time `json:"lastUpload"`
+	LastDownload           *time.Time `json:"lastDownload"`
+	BackCompatLastDownload *time.Time `json:"LastDownload"`
+	BackCompatLastUpload   *time.Time `json:"LastUpload"`
+	Error                  *string    `json:"error"`
+	PreviousError          *string    `json:"previousError"`
 }
 
 // MarkLastUpload sets the last upload time to now
 func (s *SyncStatus) MarkLastUpload() {
 	now := time.Now().UTC()
 	s.LastUpload = &now
+	s.BackCompatLastUpload = &now
 }
 
 // MarkLastDownload sets the last download time to now
 func (s *SyncStatus) MarkLastDownload() {
 	now := time.Now().UTC()
 	s.LastDownload = &now
+	s.BackCompatLastDownload = &now
 }
 
 // ReportError sets the Error field on SyncStatus
@@ -34,6 +39,10 @@ func (s *SyncStatus) ReportError(err error) {
 	}
 
 	errMsg := err.Error()
+	if strings.Contains(errMsg, "No space left on device") {
+		errMsg = "Not enough space on machine"
+	}
+
 	s.Error = &errMsg
 }
 
@@ -89,4 +98,3 @@ func SaveSyncStatus() error {
 
 	return ioutil.WriteFile(StatusFilePath, data, 0)
 }
-
