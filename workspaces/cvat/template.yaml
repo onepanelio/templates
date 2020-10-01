@@ -99,7 +99,18 @@ ports:
   port: 8080
   protocol: TCP
   targetPort: 8080
+- name: fs
+  port: 8888
+  protocol: TCP
+  targetPort: 8888
 routes:
+- match:
+  - uri:
+      prefix: /sys/filesyncer
+  route:
+  - destination:
+      port:
+        number: 8888
 - match:
   - uri:
       regex: /api/.*|/git/.*|/tensorflow/.*|/onepanelio/.*|/tracking/.*|/auto_annotation/.*|/analytics/.*|/static/.*|/admin/.*|/documentation/.*|/dextr/.*|/reid/.*
