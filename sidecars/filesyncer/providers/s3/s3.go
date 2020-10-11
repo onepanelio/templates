@@ -5,6 +5,7 @@ import (
 	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 	"log"
 	"os/exec"
+	"strings"
 )
 
 func resolveEnv(cmd *exec.Cmd) {
@@ -42,19 +43,23 @@ func Sync() {
 	}
 
 	nonS3 := config.S3.Endpoint != "s3.amazonaws.com"
+	nonS3Endpoint := config.S3.Endpoint
+	if nonS3 && !strings.HasPrefix(nonS3Endpoint, "http://") && !strings.HasPrefix(nonS3Endpoint, "https://") {
+		nonS3Endpoint = "https://" + nonS3Endpoint
+	}
 
 	var cmd *exec.Cmd
 	uri := fmt.Sprintf("s3://%v/%v", util.Bucket, util.Prefix)
 	if util.Action == util.ActionDownload {
 		if nonS3 {
-			cmd = util.Command("aws", "s3", "sync", "--endpoint-url",  config.S3.Endpoint, "--delete", uri, util.Path)
+			cmd = util.Command("aws", "s3", "sync", "--endpoint-url", nonS3Endpoint, "--delete", uri, util.Path)
 		} else {
 			cmd = util.Command("aws", "s3", "sync", "--delete", uri, util.Path)
 		}
 	}
 	if util.Action == util.ActionUpload  {
 		if nonS3 {
-			cmd = util.Command("aws", "s3", "--endpoint-url", config.S3.Endpoint, "sync", "--delete", util.Path, uri)
+			cmd = util.Command("aws", "s3", "--endpoint-url", nonS3Endpoint, "sync", "--delete", util.Path, uri)
 		} else {
 			cmd = util.Command("aws", "s3", "sync", "--delete", util.Path, uri)
 		}
