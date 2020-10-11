@@ -41,20 +41,20 @@ func Sync() {
 		return
 	}
 
-	gcp := config.S3.Endpoint != "s3.amazonaws.com"
+	nonS3 := config.S3.Endpoint != "s3.amazonaws.com"
 
 	var cmd *exec.Cmd
 	uri := fmt.Sprintf("s3://%v/%v", util.Bucket, util.Prefix)
 	if util.Action == util.ActionDownload {
-		if gcp {
-			cmd = util.Command("aws", "s3", "sync", "--endpoint-url",  "https://storage.googleapis.com", "--delete", uri, util.Path)
+		if nonS3 {
+			cmd = util.Command("aws", "s3", "sync", "--endpoint-url",  config.S3.Endpoint, "--delete", uri, util.Path)
 		} else {
 			cmd = util.Command("aws", "s3", "sync", "--delete", uri, util.Path)
 		}
 	}
 	if util.Action == util.ActionUpload  {
-		if gcp {
-			cmd = util.Command("aws", "s3", "--endpoint-url https://storage.googleapis.com", "sync", "--delete", util.Path, uri)
+		if nonS3 {
+			cmd = util.Command("aws", "s3", "--endpoint-url", config.S3.Endpoint, "sync", "--delete", util.Path, uri)
 		} else {
 			cmd = util.Command("aws", "s3", "sync", "--delete", util.Path, uri)
 		}
@@ -64,7 +64,7 @@ func Sync() {
 	util.Status.ClearError()
 
 	log.Printf("Running cmd %v\n", cmd.String())
-	
+
 	if err := util.RunCommand(cmd); err != nil {
 		util.Status.ReportError(err)
 		return
