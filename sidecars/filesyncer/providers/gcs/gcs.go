@@ -6,8 +6,6 @@ import (
 	"os/exec"
 )
 
-
-
 func Sync() {
 	// Make sure we don't run more than once sync at a time.
 	util.Mux.Lock()
@@ -28,9 +26,11 @@ func Sync() {
 	// Sync to or from bucket
 	uri := fmt.Sprintf("gs://%v/%v", util.Bucket, util.Prefix)
 	if util.Action == util.ActionDownload {
+		util.Status.IsDownloading = true
 		cmd = util.Command("gsutil", "-m", "rsync", "-d", "-r", uri, util.Path)
 	}
 	if util.Action == util.ActionUpload {
+		util.Status.IsUploading = true
 		cmd = util.Command("gsutil", "-m", "rsync", "-d", "-r", util.Path, uri)
 	}
 
@@ -43,7 +43,7 @@ func Sync() {
 	if util.Action == util.ActionDownload {
 		util.Status.MarkLastDownload()
 	}
-	if util.Action == util.ActionUpload  {
+	if util.Action == util.ActionUpload {
 		util.Status.MarkLastUpload()
 	}
 	if err := util.SaveSyncStatus(); err != nil {

@@ -10,7 +10,7 @@ import (
 
 func resolveEnv(cmd *exec.Cmd) {
 	accessKey := util.Getenv("AWS_ACCESS_KEY_ID", "")
-	if accessKey ==  "" {
+	if accessKey == "" {
 		accessKey = util.Config.S3.AccessKey
 	}
 
@@ -51,13 +51,15 @@ func Sync() {
 	var cmd *exec.Cmd
 	uri := fmt.Sprintf("s3://%v/%v", util.Bucket, util.Prefix)
 	if util.Action == util.ActionDownload {
+		util.Status.IsDownloading = true
 		if nonS3 {
 			cmd = util.Command("aws", "s3", "sync", "--endpoint-url", nonS3Endpoint, "--delete", uri, util.Path)
 		} else {
 			cmd = util.Command("aws", "s3", "sync", "--delete", uri, util.Path)
 		}
 	}
-	if util.Action == util.ActionUpload  {
+	if util.Action == util.ActionUpload {
+		util.Status.IsUploading = true
 		if nonS3 {
 			cmd = util.Command("aws", "s3", "--endpoint-url", nonS3Endpoint, "sync", "--delete", util.Path, uri)
 		} else {
@@ -78,7 +80,7 @@ func Sync() {
 	if util.Action == util.ActionDownload {
 		util.Status.MarkLastDownload()
 	}
-	if util.Action == util.ActionUpload  {
+	if util.Action == util.ActionUpload {
 		util.Status.MarkLastUpload()
 	}
 	if err := util.SaveSyncStatus(); err != nil {
