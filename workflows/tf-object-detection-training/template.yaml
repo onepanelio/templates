@@ -162,7 +162,6 @@ templates:
       path: /mnt/src/tf
     - git:
         repo: '{{workflow.parameters.trainingsource}}'
-        revision: 'optional-artifacts'
       name: tsrc
       path: /mnt/src/train
   name: tensorflow
