@@ -37,6 +37,9 @@ func Sync() {
 	util.Status.ClearError()
 	if err := util.RunCommand(cmd); err != nil {
 		util.Status.ReportError(err)
+		util.Mux.Lock()
+		util.Syncing = false
+		util.Mux.Unlock()
 		return
 	}
 
