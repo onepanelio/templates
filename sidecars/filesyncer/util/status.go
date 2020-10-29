@@ -13,6 +13,8 @@ type SyncStatus struct {
 	LastDownload           *time.Time `json:"lastDownload"`
 	BackCompatLastDownload *time.Time `json:"LastDownload"`
 	BackCompatLastUpload   *time.Time `json:"LastUpload"`
+	IsDownloading          bool       `json:"isDownloading"`
+	IsUploading            bool       `json:"isUploading"`
 	Error                  *string    `json:"error"`
 	PreviousError          *string    `json:"previousError"`
 }
@@ -22,6 +24,7 @@ func (s *SyncStatus) MarkLastUpload() {
 	now := time.Now().UTC()
 	s.LastUpload = &now
 	s.BackCompatLastUpload = &now
+	s.IsUploading = false
 }
 
 // MarkLastDownload sets the last download time to now
@@ -29,6 +32,7 @@ func (s *SyncStatus) MarkLastDownload() {
 	now := time.Now().UTC()
 	s.LastDownload = &now
 	s.BackCompatLastDownload = &now
+	s.IsDownloading = false
 }
 
 // ReportError sets the Error field on SyncStatus

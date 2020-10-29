@@ -11,6 +11,7 @@ import (
 	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
 	"github.com/robfig/cron/v3"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -52,7 +53,8 @@ func main() {
 	flags.StringVar(&util.ServerURL, "host", "localhost:8888", "URL that you want the server to run")
 	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
 	flags.StringVar(&util.ConfigLocation, "config-path", "/etc/onepanel", "The location of config files. A file named artifactRepository is expected to be here.")
-	flags.DurationVar(&util.InitialDelay, "initial-delay", 30 * time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
+	flags.DurationVar(&util.InitialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
+	flags.BoolVar(&util.JustServer, "just-server", false, "If true, doesn't perform any syncing.")
 	flags.Parse(os.Args[2:])
 
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
@@ -66,6 +68,11 @@ func main() {
 		return
 	}
 	util.Status = status
+
+	if util.JustServer {
+		startServer()
+		return
+	}
 
 	config, err := util.GetArtifactRepositoryConfig()
 	if err != nil {
@@ -145,17 +152,51 @@ func main() {
 	c.Run()
 }
 
+// routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
+// 405 is returned if it is neither a GET nor a PUT
+func routeSyncStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == "" || r.Method == "GET" {
+		getSyncStatus(w, r)
+	} else if r.Method == "PUT" {
+		putSyncStatus(w, r)
+	} else {
+		w.WriteHeader(405) // not allowed
+	}
+}
+
 // getSyncStatus returns the util.Status in JSON form
 func getSyncStatus(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(util.Status)
 	if err != nil {
+		log.Printf("[error] marshaling util.Status: %s\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("content-type", "application/json")
 	if _, err := io.WriteString(w, string(data)); err != nil {
-		fmt.Printf("[error] %v\n", err)
+		log.Printf("[error] %s\n", err)
 	}
+}
+
+// putSyncStatus updates the util.Status with the input values
+// all values are overridden
+func putSyncStatus(w http.ResponseWriter, r *http.Request) {
+	content, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("[error] reading sync status put body: %s\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.Unmarshal(content, util.Status); err != nil {
+		log.Printf("[error] unmarshaling sync status body: %s: %s\n", content, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	getSyncStatus(w, r)
 }
 
 func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +213,7 @@ func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
 // startServer starts a server that provides information about the file sync status.
 func startServer() {
 	mux := http.NewServeMux()
-	mux.HandleFunc(util.ServerURLPrefix + "/api/status", getSyncStatus)
+	mux.HandleFunc(util.ServerURLPrefix+"/api/status", routeSyncStatus)
 	mux.HandleFunc("/", handleUnsupportedEndpoint)
 
 	fmt.Printf("Starting server at %s. Prefix: %v\n", util.ServerURL, util.ServerURLPrefix)

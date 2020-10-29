@@ -19,10 +19,12 @@ func Sync() {
 
 	var cmd *exec.Cmd
 	if util.Action == util.ActionDownload {
-		cmd = util.Command("az", "storage", "blob", "download-batch", "-s", util.Bucket, "--pattern", util.Prefix + "/*", "-d", util.Path)
+		util.Status.IsDownloading = true
+		cmd = util.Command("az", "storage", "blob", "download-batch", "-s", util.Bucket, "--pattern", util.Prefix+"/*", "-d", util.Path)
 	}
-	if util.Action == util.ActionUpload  {
-		cmd = util.Command("az", "storage", "blob", "upload-batch", "-s", util.Path, "-d", util.Bucket, "--pattern", util.Prefix + "/*",)
+	if util.Action == util.ActionUpload {
+		util.Status.IsUploading = true
+		cmd = util.Command("az", "storage", "blob", "upload-batch", "-s", util.Path, "-d", util.Bucket, "--pattern", util.Prefix+"/*")
 	}
 
 	util.Status.ClearError()
@@ -37,7 +39,7 @@ func Sync() {
 	if util.Action == util.ActionDownload {
 		util.Status.MarkLastDownload()
 	}
-	if util.Action == util.ActionUpload  {
+	if util.Action == util.ActionUpload {
 		util.Status.MarkLastUpload()
 	}
 	if err := util.SaveSyncStatus(); err != nil {
