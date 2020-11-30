@@ -129,7 +129,7 @@ templates:
     - name: data
       path: /mnt/data/datasets/
       s3:
-        key: '{{workflow.parameters.cvat-annotation-path}}'
+        key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
     - git:
         repo: '{{workflow.parameters.source}}'
         revision: "no-boto"
