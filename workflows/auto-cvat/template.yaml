@@ -106,10 +106,10 @@ templates:
       configuration = onepanel.core.api.Configuration(
           host = os.getenv('ONEPANEL_API_URL'),
           api_key = {
-              'Bearer': token
+              'authorization': token
           }
       )
-      configuration.api_key_prefix['Bearer'] = 'Bearer'
+      configuration.api_key_prefix['authorization'] = 'Bearer'
       
       # Enter a context with an instance of the API client
       with onepanel.core.api.ApiClient(configuration) as api_client:
