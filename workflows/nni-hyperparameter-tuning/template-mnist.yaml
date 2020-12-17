@@ -59,7 +59,7 @@ templates:
       image: onepanel/nni:0.1.3_nni.1.9
       args:
       - --config
-      - /mnt/data/src/workflows/nni/mnist/config.yaml
+      - /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config.yaml
       workingDir: /mnt
       volumeMounts:
       - name: hyperparamtuning-data
