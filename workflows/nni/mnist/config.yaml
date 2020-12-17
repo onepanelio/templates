@@ -2,7 +2,7 @@ authorName: NNI Example
 experimentName: MNIST TF v2.x
 trialConcurrency: 1
 maxExecDuration: 1h
-maxTrialNum: 1
+maxTrialNum: 10
 trainingServicePlatform: local  # choices: local, remote, pai
 searchSpacePath: search_space.json
 useAnnotation: false
