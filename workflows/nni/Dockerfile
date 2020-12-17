@@ -10,4 +10,4 @@ RUN apt-get update \
 
 RUN pip --no-cache-dir install nni==1.9 ruamel_yaml==0.11.14
 
-COPY start.py /opt/
+COPY start.py /opt/nni/
