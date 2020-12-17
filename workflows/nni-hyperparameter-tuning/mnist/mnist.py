@@ -11,6 +11,7 @@ NNI example trial code.
 """
 
 import logging
+import json
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -92,6 +93,25 @@ def load_dataset():
     return (x_train, y_train), (x_test, y_test)
 
 
+def save_best_metrics(loss, accuracy):
+    prev_accuracy = 0
+
+    # Get existing metrics if any
+    with open('/tmp/sys-metrics.json') as f:
+        prev_metrics = json.load(f)
+        prev_accuracy = [m['value'] for m in prev_metrics if m['name'] == 'accuracy'][0]
+
+    # Write metrics if new accuracy is better
+    if prev_accuracy > accuracy:
+        return
+
+    metrics = [
+        {'name': 'accuracy', 'value': accuracy},
+        {'name': 'loss', 'value': loss}
+    ]
+    with open('/tmp/sys-metrics.json', 'w') as f:
+        json.dump(metrics, f)
+
 def main(params):
     """
     Main program:
@@ -125,6 +145,7 @@ def main(params):
 
     loss, accuracy = model.evaluate(x_test, y_test, verbose=0)
     nni.report_final_result(accuracy)  # send final accuracy to NNI tuner and web UI
+    save_best_metrics(loss, accuracy)
     _logger.info('Final accuracy reported: %s', accuracy)
 
 
