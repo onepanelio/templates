@@ -12,4 +12,4 @@ RUN pip --no-cache-dir install nni==1.9 ruamel_yaml==0.11.14
 
 COPY start.py /opt/nni/
 
-CMD ["python", "-u", "/opt/nni/start.py"]
+ENTRYPOINT ["python", "-u", "/opt/nni/start.py"]
