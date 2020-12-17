@@ -1,3 +1,4 @@
+import time
 import argparse
 from nnicli import Experiment
 
@@ -9,7 +10,11 @@ def main(args):
     
     status = exp.get_experiment_status()
     while status['status'] != 'DONE':
+        stats = exp.list_trial_jobs()
+        if stats:
+            print(stats)
         status = exp.get_experiment_status()
+        time.sleep(10)
     
     exp.stop_experiment()
 
