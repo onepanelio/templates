@@ -33,14 +33,14 @@ volumeClaimTemplates:
       resources:
         requests:
           storage: 20Gi
+
 templates:
   - name: main
     dag:
       tasks:
       - name: hyperparameter-tuning
-        template: hyperop
-  
-  - name: hyperop
+        template: hyperparameter-tuning
+  - name: hyperparameter-tuning
     inputs:
       artifacts:
         - git:
