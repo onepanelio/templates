@@ -114,6 +114,7 @@ def save_best_metrics(loss, accuracy):
     ]
     with open('/tmp/sys-metrics.json', 'w') as f:
         json.dump(metrics, f)
+        _logger.info('Saved best metrics.')
 
 def main(params):
     """
@@ -147,7 +148,9 @@ def main(params):
     _logger.info('Training completed')
 
     loss, accuracy = model.evaluate(x_test, y_test, verbose=0)
-    nni.report_final_result(accuracy)  # send final accuracy to NNI tuner and web UI
+    # send final accuracy to NNI tuner and web UI
+    nni.report_final_result(accuracy)
+    # save the best metrics so they are displayed in the Workflow Task
     save_best_metrics(loss, accuracy)
     _logger.info('Final accuracy reported: %s', accuracy)
 
