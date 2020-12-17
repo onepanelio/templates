@@ -97,9 +97,12 @@ def save_best_metrics(loss, accuracy):
     prev_accuracy = 0
 
     # Get existing metrics if any
-    with open('/tmp/sys-metrics.json') as f:
-        prev_metrics = json.load(f)
-        prev_accuracy = [m['value'] for m in prev_metrics if m['name'] == 'accuracy'][0]
+    try:
+        with open('/tmp/sys-metrics.json') as f:
+            prev_metrics = json.load(f)
+            prev_accuracy = [m['value'] for m in prev_metrics if m['name'] == 'accuracy'][0]
+    except FileNotFoundError:
+        pass
 
     # Write metrics if new accuracy is better
     if prev_accuracy > accuracy:
