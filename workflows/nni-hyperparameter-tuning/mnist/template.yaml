@@ -5,10 +5,20 @@ arguments:
       value: https://github.com/onepanelio/templates
     - name: revision
       value: master
+    - displayName: Configuration
+      hint: NNI configuration
+      type: select.select
+      name: config
+      value: /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config.yaml
+      required: true
+      options:
+      - name: 'CPU'
+        value: /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config.yaml
+      - name: 'GPU'
+        value: /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config-gpu.yaml
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
       type: select.select
-      visibility: public
       name: sys-node-pool
       value: Standard_D4s_v3
       required: true
@@ -59,7 +69,7 @@ templates:
       image: onepanel/nni:0.1.3_nni.1.9
       args:
       - --config
-      - /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config.yaml
+      - '{{workflow.parameters.config}}'
       workingDir: /mnt
       volumeMounts:
       - name: hyperparamtuning-data
