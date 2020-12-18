@@ -19,11 +19,11 @@ def main(args):
                 print('\nTrial no: %s' % job.trialJobId)
                 print('Hyperparameters: %s' % job.hyperParameters[0].parameters)
             if not prev_job or (prev_job.trialJobId == job.trialJobId and prev_job.status != job.status):
-                print('Status: %s' % job.status, end='\r')
+                print('Status: %s' % job.status)
                 if job.status == 'SUCCEEDED':
                     start = datetime.datetime.fromtimestamp(round(job.startTime / 1000))
                     end = datetime.datetime.fromtimestamp(round(job.endTime / 1000))
-                    print('\nDuration: %s' % (end - start))
+                    print('Duration: %s' % (end - start))
             prev_job = job
         
         status = exp.get_experiment_status()
