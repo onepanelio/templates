@@ -9,13 +9,13 @@ arguments:
       hint: NNI configuration
       type: select.select
       name: config
-      value: /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config.yaml
+      value: config.yaml
       required: true
       options:
       - name: 'CPU'
-        value: /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config.yaml
+        value: config.yaml
       - name: 'GPU'
-        value: /mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/config-gpu.yaml
+        value: config-gpu.yaml
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
       type: select.select
@@ -50,6 +50,14 @@ templates:
       tasks:
       - name: hyperparameter-tuning
         template: hyperparameter-tuning
+      - name: workflow-metrics-writer
+        template: workflow-metrics-writer
+        dependencies: [hyperparameter-tuning]
+        arguments:
+          # Use sys-metrics artifact output from hyperparameter-tuning Task
+          artifacts:
+          - name: best-metrics
+            from: "{{tasks.hyperparameter-tuning.outputs.artifacts.sys-metrics}}"
   - name: hyperparameter-tuning
     inputs:
       artifacts:
@@ -69,7 +77,7 @@ templates:
       image: onepanel/nni:0.1.3_nni.1.9
       args:
       - --config
-      - '{{workflow.parameters.config}}'
+      - '/mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/{{workflow.parameters.config}}'
       workingDir: /mnt
       volumeMounts:
       - name: hyperparamtuning-data
@@ -79,7 +87,7 @@ templates:
     nodeSelector:
       beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     sidecars:
-      - name: nni-hyperparamopt-ui
+      - name: nni-web-ui
         image: 'onepanel/nni-proxy:0.0.1'
         env:
           - name: ONEPANEL_INTERACTIVE_SIDECAR
@@ -87,3 +95,42 @@ templates:
         ports:
           - containerPort: 9000
             name: nni
+  - name: workflow-metrics-writer
+    inputs:
+      artifacts:
+      - name: best-metrics
+        path: /tmp/sys-metrics.json
+    script:
+      image: onepanel/python-sdk:v0.16.0
+      command: [python, '-u']
+      source: |
+        import json
+
+        # Load Task A metrics
+        with open('/tmp/sys-metrics.json') as f:
+            metrics = json.load(f)
+
+        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
+            token = f.read()
+
+        # Configure API authorization
+        configuration = onepanel.core.api.Configuration(
+            host = os.getenv('ONEPANEL_API_URL'),
+            api_key = {
+                'authorization': token
+            }
+        )
+        configuration.api_key_prefix['authorization'] = 'Bearer'
+
+        # Call SDK method to save metrics
+        with onepanel.core.api.ApiClient(configuration) as api_client:
+            api_instance = onepanel.core.api.WorkflowServiceApi(api_client)
+            namespace = '{{workflow.namespace}}'
+            uid = '{{workflow.name}}'
+            body = onepanel.core.api.AddWorkflowExecutionsMetricsRequest()
+            body.metrics = metrics
+            try:
+                api_response = api_instance.add_workflow_execution_metrics(namespace, uid, body)
+                print('Metrics added.')
+            except ApiException as e:
+                print("Exception when calling WorkflowServiceApi->add_workflow_execution_metrics: %s\n" % e)

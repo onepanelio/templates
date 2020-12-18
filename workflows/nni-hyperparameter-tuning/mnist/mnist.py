@@ -106,7 +106,7 @@ def save_best_metrics(loss, accuracy):
 
     # Write metrics if new accuracy is better
     if prev_accuracy > accuracy:
-        return
+        return false
 
     metrics = [
         {'name': 'accuracy', 'value': accuracy},
@@ -114,7 +114,9 @@ def save_best_metrics(loss, accuracy):
     ]
     with open('/tmp/sys-metrics.json', 'w') as f:
         json.dump(metrics, f)
-        _logger.info('Saved best metrics.')
+
+    _logger.info('Saved best metrics.')
+    return true
 
 def main(params):
     """
@@ -151,8 +153,12 @@ def main(params):
     # send final accuracy to NNI tuner and web UI
     nni.report_final_result(accuracy)
     # save the best metrics so they are displayed in the Workflow Task
-    save_best_metrics(loss, accuracy)
+    is_best_accuracy = save_best_metrics(loss, accuracy)
     _logger.info('Final accuracy reported: %s', accuracy)
+
+    # save the model if accuracy is better than previous model
+    if is_best_accuracy:
+        model.save('/mnt/output')
 
 
 if __name__ == '__main__':
