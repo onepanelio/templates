@@ -5,7 +5,6 @@ from nnicli import Experiment
 def main(args):
     exp = Experiment()
     
-    print(args.config)
     exp.start_experiment(args.config, port=args.port)
     
     status = exp.get_experiment_status()
