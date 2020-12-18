@@ -106,7 +106,7 @@ def save_best_metrics(loss, accuracy):
 
     # Write metrics if new accuracy is better
     if prev_accuracy > accuracy:
-        return false
+        return False
 
     metrics = [
         {'name': 'accuracy', 'value': accuracy},
@@ -116,7 +116,7 @@ def save_best_metrics(loss, accuracy):
         json.dump(metrics, f)
 
     _logger.info('Saved best metrics.')
-    return true
+    return True
 
 def main(params):
     """
