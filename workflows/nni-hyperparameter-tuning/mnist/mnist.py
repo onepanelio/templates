@@ -158,7 +158,7 @@ def main(params):
 
     # save the model if accuracy is better than previous model
     if is_best_accuracy:
-        model.save('/mnt/output/model.h5')
+        model.save('/mnt/output')
 
 
 if __name__ == '__main__':
