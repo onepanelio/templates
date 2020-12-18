@@ -68,7 +68,7 @@ templates:
           path: /mnt/data/src
     outputs:
       artifacts:
-      - name: data
+      - name: model
         path: /mnt/output
         optional: true
         archive:
@@ -104,6 +104,7 @@ templates:
       image: onepanel/python-sdk:v0.16.0
       command: [python, '-u']
       source: |
+        import os
         import json
 
         import onepanel.core.api
