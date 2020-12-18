@@ -25,7 +25,7 @@ def main(args):
                 if job.status == 'SUCCEEDED':
                     start = datetime.datetime.fromtimestamp(round(job.startTime / 1000))
                     end = datetime.datetime.fromtimestamp(round(job.endTime / 1000))
-                    print('\nDuration: %s' % (end - start))
+                    print('Duration: %s' % (end - start))
             prev_job = job
         
         status = exp.get_experiment_status()

@@ -71,6 +71,12 @@ def save_best_metrics(loss, accuracy):
     _logger.info('Best metrics saved')
     return True
 
+def save_data(params, model):
+    model.save('/mnt/output/model.h5')
+    with open('/mnt/output/hyperparamters.json', 'w') as f:
+        json.dump(params, f)
+    _logger.info('Data for best trial saved')
+
 def main(params):
     """
     Main program:
@@ -120,9 +126,7 @@ def main(params):
 
     # save the model if accuracy is better than previous model
     if is_best_accuracy:
-        model.save('/mnt/output/model.h5')
-        _logger.info('Best model saved')
-
+        save_data(params, model)
 
 if __name__ == '__main__':
     params = {
