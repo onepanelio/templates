@@ -1,20 +1,34 @@
 import time
 import argparse
+import datetime
+
 from nnicli import Experiment
 
 def main(args):
     exp = Experiment()
-    
+
     exp.start_experiment(args.config, port=args.port)
-    
+
     status = exp.get_experiment_status()
+    prev_job = None
     while status['status'] != 'DONE':
-        stats = exp.list_trial_jobs()
-        if stats:
-            print(stats)
+        jobs = exp.list_trial_jobs()
+        if jobs:
+            job = jobs[len(jobs) - 1]
+            if not prev_job or prev_job.trialJobId != job.trialJobId:
+                print('\nTrial no: %s' % job.trialJobId)
+                print('Hyperparameters: %s' % job.hyperParameters[0].parameters)
+            if not prev_job or (prev_job.trialJobId == job.trialJobId and prev_job.status != job.status):
+                print('Status: %s' % job.status, end='\r')
+                if job.status == 'SUCCEEDED':
+                    start = datetime.datetime.fromtimestamp(round(job.startTime / 1000))
+                    end = datetime.datetime.fromtimestamp(round(job.endTime / 1000))
+                    print('\nDuration: %s' % (end - start))
+            prev_job = job
+        
         status = exp.get_experiment_status()
-        time.sleep(10)
-    
+        time.sleep(5)
+
     exp.stop_experiment()
 
 if __name__ == '__main__':
