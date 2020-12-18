@@ -14,16 +14,18 @@ def main(args):
     while status['status'] != 'DONE':
         jobs = exp.list_trial_jobs()
         if jobs:
-            job = jobs[len(jobs) - 1]
+            index = len(jobs) - 1
+            job = jobs[index]
             if not prev_job or prev_job.trialJobId != job.trialJobId:
-                print('\nTrial no: %s' % job.trialJobId)
+                print('\nTrial Number: %s' % index)
+                print('Trial ID: %s' % job.trialJobId)
                 print('Hyperparameters: %s' % job.hyperParameters[0].parameters)
             if not prev_job or (prev_job.trialJobId == job.trialJobId and prev_job.status != job.status):
                 print('Status: %s' % job.status)
                 if job.status == 'SUCCEEDED':
                     start = datetime.datetime.fromtimestamp(round(job.startTime / 1000))
                     end = datetime.datetime.fromtimestamp(round(job.endTime / 1000))
-                    print('Duration: %s' % (end - start))
+                    print('\nDuration: %s' % (end - start))
             prev_job = job
         
         status = exp.get_experiment_status()
