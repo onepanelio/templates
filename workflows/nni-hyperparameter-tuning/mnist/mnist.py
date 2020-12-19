@@ -110,8 +110,7 @@ def main(params):
         x_train,
         y_train,
         batch_size=params['batch_size'],
-        epochs=10,
-        verbose=0,
+        epochs=params['epochs'],
         callbacks=[ReportIntermediates()],
         validation_data=(x_test, y_test)
     )
@@ -135,6 +134,7 @@ if __name__ == '__main__':
         'hidden_size': 1024,
         'batch_size': 32,
         'learning_rate': 1e-4,
+        'epochs': 10,
     }
 
     # fetch hyper-parameters from HPO tuner
