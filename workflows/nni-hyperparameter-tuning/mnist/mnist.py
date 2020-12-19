@@ -90,7 +90,7 @@ def main(params):
 
     (x_train, y_train), (x_test, y_test) = load_dataset()
     _logger.info('Dataset loaded')
-    
+
     model = tf.keras.Sequential([
           tf.keras.layers.Conv2D(filters=32, kernel_size=params['conv_size'], activation='relu'),
           tf.keras.layers.MaxPool2D(pool_size=2),
@@ -106,12 +106,16 @@ def main(params):
                   metrics=['accuracy'])
     _logger.info('Model built')
 
+    # Setup TensorBoard
+    log_dir = "/mnt/output/tensorboard/" + nni.get_trial_id()
+    tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
     model.fit(
         x_train,
         y_train,
         batch_size=params['batch_size'],
         epochs=params['epochs'],
-        callbacks=[ReportIntermediates()],
+        callbacks=[ReportIntermediates(), tensorboard],
         validation_data=(x_test, y_test)
     )
     _logger.info('Training completed')
