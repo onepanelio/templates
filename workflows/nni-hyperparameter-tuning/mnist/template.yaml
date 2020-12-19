@@ -74,7 +74,7 @@ templates:
         archive:
           none: {}
     container:
-      image: onepanel/nni:0.17.0_nni.1.9
+      image: onepanel/dl:0.17.0
       args:
       - --config
       - '/mnt/data/src/workflows/nni-hyperparameter-tuning/mnist/{{workflow.parameters.config}}'
