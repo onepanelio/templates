@@ -68,7 +68,7 @@ templates:
           path: /mnt/data/src
     outputs:
       artifacts:
-      - name: model
+      - name: output
         path: /mnt/output
         optional: true
         archive:
@@ -95,6 +95,20 @@ templates:
         ports:
           - containerPort: 9000
             name: nni
+      - name: tensorboard
+        image: 'tensorflow/tensorflow:2.3.0'
+        command:
+          - sh
+          - '-c'
+        env:
+          - name: ONEPANEL_INTERACTIVE_SIDECAR
+            value: 'true'
+        args:
+          # Read logs from /mnt/output/tensorboard - /mnt/output is auto-mounted from volumeMounts
+          - tensorboard --logdir /mnt/output/tensorboard
+        ports:
+          - containerPort: 6006
+            name: tensorboard
   - name: workflow-metrics-writer
     inputs:
       artifacts:
