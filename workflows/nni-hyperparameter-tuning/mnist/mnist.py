@@ -1,8 +1,8 @@
 """
 NNI example trial code.
 
-- Experiment type: Hyper-parameter Optimization
-- Trial framework: Tensorflow v2.x (Keras API)
+- Experiment type: Hyperparameter Optimization
+- Trial framework: Tensorflow v2.x
 - Model: LeNet-5
 - Dataset: MNIST
 """
@@ -38,7 +38,7 @@ class ReportIntermediates(Callback):
 
 
 def load_dataset():
-    """Download and reformat MNIST dataset"""
+    # Download and reformat MNIST dataset
     mnist = tf.keras.datasets.mnist
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -150,5 +150,5 @@ if __name__ == '__main__':
     tuned_params = nni.get_next_parameter()
     params.update(tuned_params)
 
-    _logger.info('Hyper-parameters: %s', params)
+    _logger.info('Hyperparameters: %s', params)
     main(parser.parse_args(), params)
