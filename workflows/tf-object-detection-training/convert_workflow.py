@@ -7,6 +7,7 @@ import yaml
 import argparse
 
 from google.protobuf import text_format
+import tensorflow as tf
 
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
