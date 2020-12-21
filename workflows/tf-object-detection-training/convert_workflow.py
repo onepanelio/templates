@@ -85,7 +85,7 @@ if __name__ == '__main__':
 	# sample: epochs=100;num_classes=1
 	print('Arguments: ', args)
 	extras = args.extras.split('\n')
-	extras_processed = [i.split('#')[0].replace(' ',') for i in extras if i]
+	extras_processed = [i.split('#')[0].replace(' ','') for i in extras if i]
 	params = {i.split('=')[0]:i.split('=')[1] for i in extras_processed}
 	if 'num-clones' not in params:
 		params['num-clones'] = 1
