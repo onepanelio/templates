@@ -73,11 +73,6 @@ def start_training(params):
 	#generate lable map
 	os.system('python /mnt/src/train/convert_json_workflow.py {}/'.format(params['dataset']))
 
-	#evaluate model in the end
-	# this is commented because the v1.13.0 of TF OD API is older uses unicode instead of str and updating it might break other parts.
-	# either fork that repo and update the file or update tf model and fix other parts that it might break
-	#os.system('python /mnt/src/tf/research/object_detection/legacy/eval.py --checkpoint_dir=/mnt/output/ --pipeline_config_path=/mnt/output/pipeline.config --eval_dir=/mnt/output/eval/')
-
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Train TFOD.')
 	parser.add_argument('--dataset', default='/mnt/data/datasets')
