@@ -74,7 +74,7 @@ def save_best_metrics(loss, accuracy):
 
 def save_data(args, params, model):
     model.save('{output}/model.h5'.format(output=args.output))
-    with open('{output}/hyperparamters.json'.format(output=args.output), 'w') as f:
+    with open('{output}/hyperparameters.json'.format(output=args.output), 'w') as f:
         json.dump(params, f)
     _logger.info('Data for best trial saved')
 
