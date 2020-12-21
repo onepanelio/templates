@@ -1,5 +1,5 @@
-import os
 import sys
+import subprocess
 import shutil
 import urllib.request
 import tarfile
@@ -93,13 +93,6 @@ def main(params):
         for f in files:
             shutil.move(model_dir+'/'+f,'/mnt/data/models')
 
-    os.system('mkdir -p /mnt/src/protoc')
-    os.system('wget -P /mnt/src/protoc https://github.com/protocolbuffers/protobuf/releases/download/v3.10.1/protoc-3.10.1-linux-x86_64.zip')
-    os.chdir('/mnt/src/protoc/')
-    os.system('unzip protoc-3.10.1-linux-x86_64.zip')
-    os.chdir('/mnt/src/tf/research/')
-    os.system('/mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=.')
-
     model_architecture = 'frcnn'
     if 'epochs' not in params:
         params['epochs'] = 10000
@@ -126,9 +119,19 @@ def main(params):
 
     os.chdir('/mnt/output')
     os.mkdir('eval/')
-
-    os.system('python /mnt/src/tf/research/object_detection/legacy/train.py --train_dir=/mnt/output/ --pipeline_config_path=/mnt/output/pipeline.config --num_clones={}'.format(params['num-clones']))
-    os.system('python /mnt/src/tf/research/object_detection/export_inference_graph.py --input-type=image_tensor --pipeline_config_path=/mnt/output/pipeline.config --trained_checkpoint_prefix=/mnt/output/model.ckpt-{} --output_directory=/mnt/output'.format(params['epochs']))
+    subprocess.call(['python',
+        '/mnt/src/tf/research/object_detection/legacy/train.py',
+        '--train_dir=/mnt/output/',
+        '--pipeline_config_path=/mnt/output/pipeline.config',
+        '--num_clones={}'.format(params['num-clones'])
+    ])
+    subprocess.call(['python',
+        '/mnt/src/tf/research/object_detection/export_inference_graph.py',
+        '--input-type=image_tensor',
+        '--pipeline_config_path=/mnt/output/pipeline.config',
+        '--trained_checkpoint_prefix=/mnt/output/model.ckpt-{}'.format(params['epochs']),
+        '--output_directory=/mnt/output'
+    ])
 
     # generate lable map
     convert_labels_to_csv(params['dataset'])
