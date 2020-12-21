@@ -6,6 +6,9 @@ import tarfile
 import yaml
 import argparse
 
+from google.protobuf import text_format
+from object_detection.protos import pipeline_pb2
+
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
     epochs, num_classes, num_clones, format, params):
@@ -45,7 +48,7 @@ def create_pipeline(pipeline_path, model_path, label_path,
     with tf.gfile.Open(out_pipeline_path, 'wb') as f:
         f.write(config_text)
 
-def start_training(params):
+def main(params):
 	if not os.path.isdir('/mnt/data/models'):
 		try:
 			os.remove('/mnt/data/models')
@@ -130,5 +133,5 @@ if __name__ == '__main__':
 	params.update(vars(args))
 	params['epochs'] = params.pop('num-steps') 
 	print('Processed parameters: ', params)
-	start_training(params)
+	main(params)
 
