@@ -12,29 +12,28 @@ from google.protobuf import text_format
 import tensorflow as tf
 
 def convert_labels_to_csv(path):
-	print("reading pbtxt file...", os.path.join(path, "label_map.pbtxt"))
-	with open(os.path.join(path, "label_map.pbtxt"),'r') as f:
+	print('reading pbtxt file...', os.path.join(path, 'label_map.pbtxt'))
+	with open(os.path.join(path, 'label_map.pbtxt'),'r') as f:
 		txt = f.readlines()
-	print("generating label_map.json file...")
-	csv_out = open(os.path.join("/mnt/output/", "classes.csv"), "w")
+	print('generating label_map.json file...')
+	csv_out = open(os.path.join('/mnt/output/', 'classes.csv'), 'w')
 	csv_writer = csv.writer(csv_out)
 	csv_writer.writerow(['labels'])
 	data = {}
 	for line in txt:
-		if "id" in line:
-			i = str(line.split(":")[1].strip())
+		if 'id' in line:
+			i = str(line.split(':')[1].strip())
 			data[i] = None
-		if "name"  in line:
-			n = line.split(":")[1].strip().strip("'")
+		if 'name'  in line:
+			n = line.split(':')[1].strip().strip("'")
 			csv_writer.writerow([n])
 			data[i] = n
-	d = {"label_map":data}
-	with open(os.path.join("/mnt/output/", "label_map.json"), 'w') as outfile:
+	d = {'label_map': data}
+	with open(os.path.join('/mnt/output/', 'label_map.json'), 'w') as outfile:
 		json.dump(d, outfile)
 
 def create_pipeline(pipeline_path, model_path, label_path,
-    train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
-    epochs, num_classes, num_clones, format, params):
+    train_tfrecord_path, eval_tfrecord_path, out_pipeline_path, model_architecture, params):
 	# We need to import here since pb files are built right before this call
     from object_detection.protos import pipeline_pb2
 
@@ -42,16 +41,16 @@ def create_pipeline(pipeline_path, model_path, label_path,
     with tf.gfile.GFile(pipeline_path, 'r') as f:
         proto_str = f.read()
         text_format.Merge(proto_str, pipeline_config)
-    if format == 'ssd':
-        pipeline_config.model.ssd.num_classes=int(num_classes)
+    if model_architecture == 'ssd':
+        pipeline_config.model.ssd.num_classes=int(params['num_classes'])
         if 'image-height' in params:
             pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.height = int(params['image-height'])
         if 'image-width' in params:
             pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.width = int(params['image-width'])
     else:  #faster-rcnn based models
-        pipeline_config.model.faster_rcnn.num_classes=int(num_classes)
-        if int(num_clones) != 1:
-            pipeline_config.train_config.batch_size = int(num_clones)
+        pipeline_config.model.faster_rcnn.num_classes=int(params['num_classes'])
+        if int(params['num-clones']) != 1:
+            pipeline_config.train_config.batch_size = int(params['num-clones'])
         if 'min-dimension' in params:
             pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(params['min-dimension'])
         if 'max-dimension' in params:
@@ -62,7 +61,7 @@ def create_pipeline(pipeline_path, model_path, label_path,
             pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(params['schedule-step-2'])
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
-    pipeline_config.train_config.num_steps=int(epochs)
+    pipeline_config.train_config.num_steps=int(params['epochs'])
     pipeline_config.train_input_reader.label_map_path=label_path
     pipeline_config.train_input_reader.tf_record_input_reader.input_path[0]=train_tfrecord_path
 
@@ -94,8 +93,6 @@ def main(params):
         for f in files:
             shutil.move(model_dir+'/'+f,'/mnt/data/models')
 
-
-    os.system('pip install test-generator')
     os.system('mkdir -p /mnt/src/protoc')
     os.system('wget -P /mnt/src/protoc https://github.com/protocolbuffers/protobuf/releases/download/v3.10.1/protoc-3.10.1-linux-x86_64.zip')
     os.chdir('/mnt/src/protoc/')
@@ -103,20 +100,20 @@ def main(params):
     os.chdir('/mnt/src/tf/research/')
     os.system('/mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=.')
 
-    model = 'frcnn'
+    model_architecture = 'frcnn'
     if 'epochs' not in params:
         params['epochs'] = 10000
     if 'ssd-mobilenet-v2-coco' in params['model'] or 'ssd-mobilenet-v1-coco2' in params['model']:
         if 'epochs' not in params:
             params['epochs'] = 15000
-        model = 'ssd'
+        model_architecture = 'ssd'
     elif 'frcnn-res101-low' in params['model'] or 'frcnn-nas-coco' in params['model']:
         if 'epochs' not in params:
             params['epochs'] = 10
     elif 'ssdlite-mobilenet-coco' in params['model']:
         if 'epochs' not in params:
             params['epochs'] = 10
-        model = 'ssd'
+        model_architecture = 'ssd'
 
     create_pipeline('/mnt/data/models/pipeline.config',
         '/mnt/data/models/model.ckpt',
@@ -124,10 +121,7 @@ def main(params):
         params['dataset']+'/*.tfrecord',
         params['dataset']+'/default.tfrecord',
         '/mnt/output/pipeline.config',
-        params['epochs'],
-        params['num_classes'],
-        params['num-clones'],
-        model,
+        model_architecture,
         params)
 
     os.chdir('/mnt/output')
