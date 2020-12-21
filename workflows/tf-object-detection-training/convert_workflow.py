@@ -7,7 +7,6 @@ import yaml
 import argparse
 
 from google.protobuf import text_format
-from object_detection.protos import pipeline_pb2
 
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
@@ -77,6 +76,9 @@ def main(params):
 	os.system('unzip protoc-3.10.1-linux-x86_64.zip')
 	os.chdir('/mnt/src/tf/research/')
 	os.system('/mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=.')
+	
+	# We need to import here since build happens above
+	from object_detection.protos import pipeline_pb2
 
 	model = 'frcnn'
 	if 'epochs' not in params:
