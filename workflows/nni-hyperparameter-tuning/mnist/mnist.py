@@ -9,6 +9,7 @@ NNI example trial code.
 
 import logging
 import json
+import argparse
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -71,13 +72,13 @@ def save_best_metrics(loss, accuracy):
     _logger.info('Best metrics saved')
     return True
 
-def save_data(params, model):
-    model.save('/mnt/output/model.h5')
-    with open('/mnt/output/hyperparamters.json', 'w') as f:
+def save_data(args, params, model):
+    model.save('{output}/model.h5'.format(output=args.output))
+    with open('{output}/hyperparamters.json'.format(output=args.output), 'w') as f:
         json.dump(params, f)
     _logger.info('Data for best trial saved')
 
-def main(params):
+def main(args, params):
     """
     Main program:
       - Prepare dataset
@@ -107,7 +108,7 @@ def main(params):
     _logger.info('Model built')
 
     # Setup TensorBoard
-    log_dir = "/mnt/output/tensorboard/" + nni.get_trial_id()
+    log_dir = '{output}/tensorboard/'.format(output=args.output) + nni.get_trial_id()
     tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     model.fit(
@@ -129,9 +130,13 @@ def main(params):
 
     # save the model if accuracy is better than previous model
     if is_best_accuracy:
-        save_data(params, model)
+        save_data(args, params, model)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    required_argument_group = parser.add_argument_group('required arguments')
+    required_argument_group.add_argument('--output', help='Directory to save output data', required=True)
+
     params = {
         'dropout_rate': 0.5,
         'conv_size': 5,
@@ -146,4 +151,4 @@ if __name__ == '__main__':
     params.update(tuned_params)
 
     _logger.info('Hyper-parameters: %s', params)
-    main(params)
+    main(parser.parse_args(), params)
