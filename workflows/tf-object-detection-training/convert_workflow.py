@@ -11,8 +11,10 @@ from google.protobuf import text_format
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
     epochs, num_classes, num_clones, format, params):
-    print(pipeline_path, model_path, label_path, train_tfrecord_path, eval_tfrecord_path, out_pipeline_path, epochs, format)
-    pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
+	# We need to import here since pb files are built right before this call
+	from object_detection.protos import pipeline_pb2
+
+	pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
     with tf.gfile.GFile(pipeline_path, 'r') as f:
         proto_str = f.read()
         text_format.Merge(proto_str, pipeline_config)
@@ -76,9 +78,6 @@ def main(params):
 	os.system('unzip protoc-3.10.1-linux-x86_64.zip')
 	os.chdir('/mnt/src/tf/research/')
 	os.system('/mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=.')
-	
-	# We need to import here since build happens above
-	from object_detection.protos import pipeline_pb2
 
 	model = 'frcnn'
 	if 'epochs' not in params:
