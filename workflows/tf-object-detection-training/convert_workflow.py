@@ -3,11 +3,34 @@ import sys
 import shutil
 import urllib.request
 import tarfile
-import yaml
 import argparse
+import yaml
+import json
+import csv
 
 from google.protobuf import text_format
 import tensorflow as tf
+
+def convert_labels_to_csv(path):
+	print("reading pbtxt file...", os.path.join(path, "label_map.pbtxt"))
+	with open(os.path.join(path, "label_map.pbtxt"),'r') as f:
+		txt = f.readlines()
+	print("generating label_map.json file...")
+	csv_out = open(os.path.join("/mnt/output/", "classes.csv"), "w")
+	csv_writer = csv.writer(csv_out)
+	csv_writer.writerow(['labels'])
+	data = {}
+	for line in txt:
+		if "id" in line:
+			i = str(line.split(":")[1].strip())
+			data[i] = None
+		if "name"  in line:
+			n = line.split(":")[1].strip().strip("'")
+			csv_writer.writerow([n])
+			data[i] = n
+	d = {"label_map":data}
+	with open(os.path.join("/mnt/output/", "label_map.json"), 'w') as outfile:
+		json.dump(d, outfile)
 
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
@@ -113,8 +136,8 @@ def main(params):
     os.system('python /mnt/src/tf/research/object_detection/legacy/train.py --train_dir=/mnt/output/ --pipeline_config_path=/mnt/output/pipeline.config --num_clones={}'.format(params['num-clones']))
     os.system('python /mnt/src/tf/research/object_detection/export_inference_graph.py --input-type=image_tensor --pipeline_config_path=/mnt/output/pipeline.config --trained_checkpoint_prefix=/mnt/output/model.ckpt-{} --output_directory=/mnt/output'.format(params['epochs']))
 
-    #generate lable map
-    os.system('python /mnt/src/train/convert_json_workflow.py {}/'.format(params['dataset']))
+    # generate lable map
+    convert_labels_to_csv(params['dataset'])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train TFOD.')
