@@ -6,6 +6,45 @@ import tarfile
 import yaml
 import argparse
 
+def create_pipeline(pipeline_path, model_path, label_path,
+    train_tfrecord_path, eval_tfrecord_path, out_pipeline_path,
+    epochs, num_classes, num_clones, format, params):
+    print(pipeline_path, model_path, label_path, train_tfrecord_path, eval_tfrecord_path, out_pipeline_path, epochs, format)
+    pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
+    with tf.gfile.GFile(pipeline_path, 'r') as f:
+        proto_str = f.read()
+        text_format.Merge(proto_str, pipeline_config)
+    if format == 'ssd':
+        pipeline_config.model.ssd.num_classes=int(num_classes)
+        if 'image-height' in params:
+            pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.height = int(params['image-height'])
+        if 'image-width' in params:
+            pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.width = int(params['image-width'])
+    else:  #faster-rcnn based models
+        pipeline_config.model.faster_rcnn.num_classes=int(num_classes)
+        if int(num_clones) != 1:
+            pipeline_config.train_config.batch_size = int(num_clones)
+        if 'min-dimension' in params:
+            pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(params['min-dimension'])
+        if 'max-dimension' in params:
+            pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.max_dimension = int(params['max-dimension'])
+        if 'schedule-step-1' in params:
+            pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].step = int(params['schedule-step-1'])
+        if 'schedule-step-2' in params:
+            pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(params['schedule-step-2'])
+
+    pipeline_config.train_config.fine_tune_checkpoint=model_path
+    pipeline_config.train_config.num_steps=int(epochs)
+    pipeline_config.train_input_reader.label_map_path=label_path
+    pipeline_config.train_input_reader.tf_record_input_reader.input_path[0]=train_tfrecord_path
+
+    pipeline_config.eval_input_reader[0].label_map_path=label_path
+    pipeline_config.eval_input_reader[0].tf_record_input_reader.input_path[0]=eval_tfrecord_path
+
+    config_text = text_format.MessageToString(pipeline_config)
+    with tf.gfile.Open(out_pipeline_path, 'wb') as f:
+        f.write(config_text)
+
 def start_training(params):
 	if not os.path.isdir('/mnt/data/models'):
 		try:
@@ -35,7 +74,6 @@ def start_training(params):
 	os.system('unzip protoc-3.10.1-linux-x86_64.zip')
 	os.chdir('/mnt/src/tf/research/')
 	os.system('/mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=.')
-	from create_pipeline_v2 import create_pipeline
 
 	model = 'frcnn'
 	if 'epochs' not in params:
