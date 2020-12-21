@@ -7,7 +7,7 @@ arguments:
     visibility: private
 
   - name: trainingsource
-    value: https://github.com/onepanelio/cvat-training.git
+    value: https://github.com/onepanelio/templates.git
     type: hidden
     visibility: private
 
@@ -96,9 +96,11 @@ arguments:
       value: Standard_D4s_v3
     - name: 'GPU: 1xK80, CPU: 6, RAM: 56GB'
       value: Standard_NC6
+
   - name: dump-format
     value: cvat_tfrecord
     visibility: public
+
 entrypoint: main
 templates:
 - dag:
@@ -126,7 +128,7 @@ templates:
       pip install pillow lxml Cython contextlib2 jupyter matplotlib numpy scipy boto3 pycocotools pyyaml google-cloud-storage && \
       cd /mnt/src/tf/research && \
       export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim && \
-      cd /mnt/src/train && \
+      cd /mnt/src/train/workflows/tf-object-detection-training && \
       python convert_workflow.py \
         --extras="{{workflow.parameters.hyperparameters}}" \
         --model="{{workflow.parameters.cvat-model}}" \

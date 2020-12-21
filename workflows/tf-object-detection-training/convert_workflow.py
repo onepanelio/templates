@@ -16,7 +16,7 @@ def start_training(params):
 		os.makedirs('/mnt/data/models/')
 
 	#check if base model exists, if not then download
-	if params['sys_finetune_checkpoint'] == ':
+	if params['sys_finetune_checkpoint'] == '':
 		print('base model does not exist, downloading...')
 		urllib.request.urlretrieve('https://github.com/onepanelio/templates/releases/download/v0.2.0/{}.tar'.format(params['model']), '/mnt/data/models/model.tar')
 		model_files = tarfile.open('/mnt/data/models/model.tar')
