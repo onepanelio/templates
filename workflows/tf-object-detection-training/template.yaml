@@ -7,7 +7,7 @@ arguments:
     visibility: private
 
   - name: trainingsource
-    value: https://github.com/onepanelio/cvat-training.git
+    value: https://github.com/onepanelio/templates.git
     type: hidden
     visibility: private
 
@@ -96,9 +96,11 @@ arguments:
       value: Standard_D4s_v3
     - name: 'GPU: 1xK80, CPU: 6, RAM: 56GB'
       value: Standard_NC6
+
   - name: dump-format
     value: cvat_tfrecord
     visibility: public
+
 entrypoint: main
 templates:
 - dag:
@@ -123,11 +125,17 @@ templates:
     - |
       apt-get update && \
       apt-get install -y python3-pip git wget unzip libglib2.0-0 libsm6 libxext6 libxrender-dev && \
-      pip install pillow lxml Cython contextlib2 jupyter matplotlib numpy scipy boto3 pycocotools pyyaml google-cloud-storage && \
+      pip install pillow lxml Cython contextlib2 jupyter matplotlib numpy scipy boto3 pycocotools pyyaml google-cloud-storage test-generator && \
       cd /mnt/src/tf/research && \
       export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim && \
-      cd /mnt/src/train && \
-      python convert_workflow.py \
+      mkdir -p /mnt/src/protoc && \
+      wget -P /mnt/src/protoc https://github.com/protocolbuffers/protobuf/releases/download/v3.10.1/protoc-3.10.1-linux-x86_64.zip && \
+      cd /mnt/src/protoc/ && \
+      unzip protoc-3.10.1-linux-x86_64.zip && \
+      cd /mnt/src/tf/research/ && \
+      /mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=. && \
+      cd /mnt/src/train/workflows/tf-object-detection-training && \
+      python train.py \
         --extras="{{workflow.parameters.hyperparameters}}" \
         --model="{{workflow.parameters.cvat-model}}" \
         --num_classes="{{workflow.parameters.cvat-num-classes}}" \
