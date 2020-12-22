@@ -9,17 +9,21 @@ arguments:
   - name: workspace-template-uid
     value: 'cvat'
     type: hidden
+
   - name: workspace-node-pool
     displayName: CVAT Workspace node pool
-    # Change to node pool value for your provider
-    value: Standard_NC6
+    type: select.nodepool
+    visibility: public
+    value: default
+    required: true
+
   - name: cvat-task-name
     displayName: CVAT task name
     value: 'CVAT Task'
   - name: cvat-task-labels
     displayName: CVAT task labels
     type: textarea.textarea
-    # User can hange to actual labels that you will be using for task
+    # User can change to actual labels that you will be using for task
     value: |
       [
         {

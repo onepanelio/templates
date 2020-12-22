@@ -75,17 +75,10 @@ arguments:
  
   - displayName: Node pool
     hint: Name of node pool or group
-    type: select.select
+    type: select.nodepool
     name: sys-node-pool
     value: Standard_D4s_v3
     required: true
-    options:
-    - name: 'CPU: 2, RAM: 8GB'
-      value: Standard_D2s_v3
-    - name: 'CPU: 4, RAM: 16GB'
-      value: Standard_D4s_v3
-    - name: 'GPU: 1xK80, CPU: 6, RAM: 56GB'
-      value: Standard_NC6
 
 entrypoint: main
 templates:
