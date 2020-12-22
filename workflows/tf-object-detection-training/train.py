@@ -35,7 +35,7 @@ def convert_labels_to_csv(path):
 
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path, model_architecture, params):
-	# We need to import here since pb files are built right before this call
+	# We need to import here since pb files are built right before this function is called
     from object_detection.protos import pipeline_pb2
 
     pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
