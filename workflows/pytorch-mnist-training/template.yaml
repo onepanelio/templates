@@ -5,6 +5,13 @@ arguments:
       value: https://github.com/onepanelio/pytorch-examples.git
     - name: command
       value: "python mnist/main.py --epochs=1"
+    - displayName: Node pool
+      hint: Name of node pool or group to run this workflow task
+      type: select.nodepool
+      name: sys-node-pool
+      value: Standard_D4s_v3
+      visibility: public
+      required: true
 volumeClaimTemplates:
   - metadata:
       name: data
