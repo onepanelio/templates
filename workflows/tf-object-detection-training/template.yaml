@@ -82,6 +82,10 @@ arguments:
     - name: 'TensorFlow 1.13.1 GPU Image'
       value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
 
+  - name: dump-format
+    value: cvat_tfrecord
+    visibility: public
+
   - displayName: Node pool
     hint: Name of node pool or group to run this workflow task
     type: select.nodepool
@@ -89,10 +93,6 @@ arguments:
     value: Standard_D4s_v3
     visibility: public
     required: true
-
-  - name: dump-format
-    value: cvat_tfrecord
-    visibility: public
 
 entrypoint: main
 templates:
