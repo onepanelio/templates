@@ -56,6 +56,8 @@ def create_pipeline(pipeline_path, model_path, label_path,
             pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(params['min-dimension'])
         if 'max-dimension' in params:
             pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.max_dimension = int(params['max-dimension'])
+        if 'initial-learning-rate' in params:
+            pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.initial_learning_rate = float(initial-learning-rate)
         if 'schedule-step-1' in params:
             pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].step = int(params['schedule-step-1'])
         if 'schedule-step-2' in params:
