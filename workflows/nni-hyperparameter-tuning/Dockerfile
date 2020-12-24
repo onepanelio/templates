@@ -10,6 +10,6 @@ RUN apt-get update \
 
 RUN pip --no-cache-dir install nni==1.9 ruamel_yaml==0.11.14
 
-COPY start.py /opt/nni/
+COPY start.py /opt/onepanel/nni/
 
-ENTRYPOINT ["python", "-u", "/opt/nni/start.py"]
+ENTRYPOINT ["python", "-u", "/opt/onepanel/nni/start.py"]
