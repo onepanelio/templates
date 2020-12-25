@@ -27,7 +27,7 @@ arguments:
   - name: cvat-num-classes
     displayName: Number of classes
     hint: Number of classes (i.e in CVAT taks) + 1 for background
-    value: 81
+    value: '81'
     visibility: internal
     
   - name: hyperparameters
@@ -59,18 +59,11 @@ arguments:
   
   - displayName: Node pool
     hint: Name of node pool or group to run this workflow task
-    type: select.select
+    type: select.nodepool
     visibility: public
     name: sys-node-pool
-    value: Standard_D4s_v3
+    value: default
     required: true
-    options:
-    - name: 'CPU: 2, RAM: 8GB'
-      value: Standard_D2s_v3
-    - name: 'CPU: 4, RAM: 16GB'
-      value: Standard_D4s_v3
-    - name: 'GPU: 1xK80, CPU: 6, RAM: 56GB'
-      value: Standard_NC6
 
 entrypoint: main
 templates:
@@ -122,6 +115,17 @@ templates:
     - mountPath: /mnt/output
       name: output
     workingDir: /mnt/src
+    sidecars:
+      - name: tensorboard
+        image: tensorflow/tensorflow:2.3.0
+        command: [ sh, -c ]
+        env:
+          - name: ONEPANEL_INTERACTIVE_SIDECAR
+            value: 'true'
+        args: [ "tensorboard --logdir /mnt/output/" ]
+        ports:
+          - containerPort: 6006
+            name: tensorboard
   nodeSelector:
     beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
   inputs:
