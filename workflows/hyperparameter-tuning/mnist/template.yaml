@@ -25,7 +25,7 @@ arguments:
           classArgs:
             optimize_mode: maximize   # choices: maximize, minimize
         trial:
-          command: python mnist.py --output /mnt/output
+          command: python main.py --output /mnt/output
           codeDir: .
           # gpuNum: 1                 # uncomment and update to number of GPUs
     - name: search-space
