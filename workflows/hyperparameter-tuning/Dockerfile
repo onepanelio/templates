@@ -1,4 +1,4 @@
-FROM onepanel/jupyterlab:1.0.1
+FROM onepanel/vscode:0.17.0_code-server.3.8.0
 
 LABEL maintainer="Onepanel, Inc. <support@onepanel.io>"
 
