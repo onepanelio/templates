@@ -1,6 +1,6 @@
 entrypoint: main
 arguments:
-    parameters:
+  parameters:
     - name: source
       value: https://github.com/onepanelio/templates
     - name: revision
@@ -68,16 +68,16 @@ templates:
   - name: main
     dag:
       tasks:
-      - name: hyperparameter-tuning
-        template: hyperparameter-tuning
-      - name: workflow-metrics-writer
-        template: workflow-metrics-writer
-        dependencies: [hyperparameter-tuning]
-        arguments:
-          # Use sys-metrics artifact output from hyperparameter-tuning Task
-          artifacts:
-          - name: best-metrics
-            from: "{{tasks.hyperparameter-tuning.outputs.artifacts.sys-metrics}}"
+        - name: hyperparameter-tuning
+          template: hyperparameter-tuning
+        - name: workflow-metrics-writer
+          template: workflow-metrics-writer
+          dependencies: [hyperparameter-tuning]
+          arguments:
+            # Use sys-metrics artifact output from hyperparameter-tuning Task
+            artifacts:
+              - name: best-metrics
+                from: "{{tasks.hyperparameter-tuning.outputs.artifacts.sys-metrics}}"
   - name: hyperparameter-tuning
     inputs:
       artifacts:
@@ -96,22 +96,22 @@ templates:
             data: '{{workflow.parameters.search-space}}'
     outputs:
       artifacts:
-      - name: output
-        path: /mnt/output
-        optional: true
-        archive:
-          none: {}
+        - name: output
+          path: /mnt/output
+          optional: true
+          archive:
+            none: {}
     container:
       image: onepanel/dl:0.17.0
       args:
-      - --config
-      - /mnt/data/src/workflows/hyperparameter-tuning/mnist/config.yaml
+        - --config
+        - /mnt/data/src/workflows/hyperparameter-tuning/mnist/config.yaml
       workingDir: /mnt
       volumeMounts:
-      - name: hyperparamtuning-data
-        mountPath: /mnt/data
-      - name: hyperparamtuning-output
-        mountPath: /mnt/output
+        - name: hyperparamtuning-data
+          mountPath: /mnt/data
+        - name: hyperparamtuning-output
+          mountPath: /mnt/output
     nodeSelector:
       beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     sidecars:
@@ -140,8 +140,8 @@ templates:
   - name: workflow-metrics-writer
     inputs:
       artifacts:
-      - name: best-metrics
-        path: /tmp/sys-metrics.json
+        - name: best-metrics
+          path: /tmp/sys-metrics.json
     script:
       image: onepanel/python-sdk:v0.16.0
       command: [python, '-u']
