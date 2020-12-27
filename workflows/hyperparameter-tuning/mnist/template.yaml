@@ -45,7 +45,7 @@ arguments:
       hint: Name of node pool or group to run this workflow task
       type: select.nodepool
       name: sys-node-pool
-      value: Standard_D4s_v3
+      value: default
       required: true
 
 volumeClaimTemplates:
