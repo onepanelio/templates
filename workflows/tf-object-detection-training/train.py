@@ -9,6 +9,9 @@ import yaml
 import json
 import csv
 
+import faulthandler
+faulthandler.enable()
+
 from google.protobuf import text_format
 import tensorflow as tf
 import numpy as np
