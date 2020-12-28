@@ -34,7 +34,7 @@ def main(args):
                         print(f.read())
                     break
             prev_job = job
-        
+
         status = exp.get_experiment_status()
         time.sleep(5)
 
