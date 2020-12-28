@@ -11,6 +11,44 @@ import csv
 
 from google.protobuf import text_format
 import tensorflow as tf
+import numpy as np
+
+def count_samples(dataset):
+    cnt_graph = dataset.reduce(np.int64(0), lambda x, _: x + 1)
+    with tf.compat.v1.Session() as sess:
+        cnt = sess.run(cnt_graph)
+    return cnt
+
+def split_dataset(path, train_path, val_path, val_ratio=0.2, seed=99):
+    print('\nSplitting up dataset')
+    if (val_ratio > 1.0) or (val_ratio < 0.0):
+        val_ratio = 0.2
+    
+    # Load Dataset
+    full_dataset = tf.data.TFRecordDataset(path)
+
+    # Count samples
+    cnt = count_samples(full_dataset)
+    print('full dataset size: {}'.format(cnt))
+
+    # Split
+    full_dataset = full_dataset.shuffle(cnt, seed=seed) # Shuffle dataset
+    train_size = int(val_ratio * cnt)
+    train_dataset = full_dataset.take(train_size)
+    val_dataset = full_dataset.skip(train_size)
+
+    # Save train and validation datasets
+    train_writer = tf.data.experimental.TFRecordWriter(train_path)
+    val_writer = tf.data.experimental.TFRecordWriter(val_path)
+    with tf.compat.v1.Session() as sess:
+        sess.run(train_writer.write(train_dataset))
+        sess.run(val_writer.write(val_dataset))
+
+    # Count new dataset samples
+    train_cnt = count_samples(train_dataset)
+    val_cnt = count_samples(val_dataset)
+    print('train dataset size: {}'.format(train_cnt))
+    print('validation dataset size: {}'.format(val_cnt))
 
 def convert_labels_to_csv(path):
     with open(os.path.join(path, 'label_map.pbtxt'),'r') as f:
@@ -98,6 +136,8 @@ def main(params):
     model_architecture = 'frcnn'
     if 'num-clones' not in params:
         params['num-clones'] = 1
+    if 'train-val-ratio' not in params:
+        params['train-val-ratio'] = 0.8
     if 'num-steps' not in params:
         params['num-steps'] = 10000
     if 'ssd-mobilenet-v2-coco' in params['model'] or 'ssd-mobilenet-v1-coco2' in params['model']:
@@ -113,11 +153,18 @@ def main(params):
         model_architecture = 'ssd'
     params['epochs'] = params.pop('num-steps')
 
+    split_dataset(
+        params['dataset']+'/default.tfrecord', 
+        params['dataset']+'/train.tfrecord', 
+        params['dataset']+'/validation.tfrecord',
+        params['train-val-ratio']
+    )
+
     create_pipeline('/mnt/data/models/pipeline.config',
         '/mnt/data/models/model.ckpt',
         params['dataset']+'/label_map.pbtxt',
-        params['dataset']+'/*.tfrecord',
-        params['dataset']+'/default.tfrecord',
+        params['dataset']+'/train.tfrecord',
+        params['dataset']+'/validation.tfrecord',
         '/mnt/output/pipeline.config',
         model_architecture,
         params)
