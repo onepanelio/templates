@@ -175,10 +175,10 @@ def main(params):
     os.chdir('/mnt/output')
     os.mkdir('eval/')
     subprocess.call(['python',
-        '/mnt/src/tf/research/object_detection/legacy/train.py',
-        '--train_dir=/mnt/output/',
+        '/mnt/src/tf/research/object_detection/model_main.py',
         '--pipeline_config_path=/mnt/output/pipeline.config',
-        '--num_clones={}'.format(params['num-clones'])
+        '--model_dir=/mnt/output/',
+        '--num_train_steps={}'.format(int(params['epochs'])//3)
     ])
     subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/export_inference_graph.py',
