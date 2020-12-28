@@ -17,7 +17,7 @@ def main(args):
             index = len(jobs) - 1
             job = jobs[index]
             if not prev_job or prev_job.trialJobId != job.trialJobId:
-                print('\nTrial Number: %s' % index)
+                print('\nTrial number: %s' % index)
                 print('Trial ID: %s' % job.trialJobId)
                 print('Hyperparameters: %s' % job.hyperParameters[0].parameters)
             if not prev_job or (prev_job.trialJobId == job.trialJobId and prev_job.status != job.status):
@@ -28,6 +28,11 @@ def main(args):
                     end = datetime.datetime.fromtimestamp(round(job.endTime / 1000))
                     print('Duration: %s' % (end - start))
                     print('Default metric: %s' % job.finalMetricData[0].data)
+                if job.status == 'FAILED':
+                    print('Error log:')
+                    with open(job.stderrPath.replace('file:/localhost:','')) as f:
+                        print(f.read())
+                    break
             prev_job = job
         
         status = exp.get_experiment_status()
