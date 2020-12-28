@@ -30,7 +30,7 @@ def main(args):
                     print('Default metric: %s' % job.finalMetricData[0].data)
                 if job.status == 'FAILED':
                     print('Error log:')
-                    with open(job.stderrPath.replace('file:/localhost:','')) as f:
+                    with open(job.stderrPath.replace('file:/localhost:', '')) as f:
                         print(f.read())
                     break
             prev_job = job
