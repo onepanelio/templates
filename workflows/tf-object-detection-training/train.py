@@ -178,6 +178,7 @@ def main(params):
         '/mnt/src/tf/research/object_detection/model_main.py',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--model_dir=/mnt/output/',
+        '--checkpoint_dir=/mnt/output/',
         '--num_train_steps={}'.format(params['epochs'])
     ])
     subprocess.call(['python',
