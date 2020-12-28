@@ -1,4 +1,3 @@
-# source: https://github.com/onepanelio/templates/blob/master/workflows/pytorch-mnist-training/
 arguments:
   parameters:
     - name: epochs
