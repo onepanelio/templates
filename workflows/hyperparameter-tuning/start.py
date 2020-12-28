@@ -1,3 +1,4 @@
+import sys
 import time
 import argparse
 import datetime
@@ -11,6 +12,7 @@ def main(args):
 
     status = exp.get_experiment_status()
     prev_job = None
+    failed = False
     while status['status'] != 'DONE':
         jobs = exp.list_trial_jobs()
         if jobs:
@@ -29,6 +31,7 @@ def main(args):
                     print('Duration: %s' % (end - start))
                     print('Default metric: %s' % job.finalMetricData[0].data)
                 if job.status == 'FAILED':
+                    failed = True
                     print('Error log:')
                     with open(job.stderrPath.replace('file:/localhost:', '')) as f:
                         print(f.read())
@@ -39,6 +42,8 @@ def main(args):
         time.sleep(5)
 
     exp.stop_experiment()
+    if failed:
+        sys.exit(1)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
