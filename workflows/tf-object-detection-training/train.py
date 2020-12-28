@@ -178,7 +178,7 @@ def main(params):
         '/mnt/src/tf/research/object_detection/model_main.py',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--model_dir=/mnt/output/',
-        '--num_train_steps={}'.format(int(params['epochs'])//3)
+        '--num_train_steps={}'.format(params['epochs'])
     ])
     subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/export_inference_graph.py',
