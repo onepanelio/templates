@@ -96,19 +96,22 @@ def main(params):
             shutil.move(model_dir+'/'+f,'/mnt/data/models')
 
     model_architecture = 'frcnn'
-    if 'epochs' not in params:
-        params['epochs'] = 10000
+    if 'num-clones' not in params:
+        params['num-clones'] = 1
+    if 'num-steps' not in params:
+        params['num-steps'] = 10000
     if 'ssd-mobilenet-v2-coco' in params['model'] or 'ssd-mobilenet-v1-coco2' in params['model']:
-        if 'epochs' not in params:
-            params['epochs'] = 15000
+        if 'num-steps' not in params:
+            params['num-steps'] = 15000
         model_architecture = 'ssd'
     elif 'frcnn-res101-low' in params['model'] or 'frcnn-nas-coco' in params['model']:
-        if 'epochs' not in params:
-            params['epochs'] = 10
+        if 'num-steps' not in params:
+            params['num-steps'] = 10
     elif 'ssdlite-mobilenet-coco' in params['model']:
-        if 'epochs' not in params:
-            params['epochs'] = 10
+        if 'num-steps' not in params:
+            params['num-steps'] = 10
         model_architecture = 'ssd'
+    params['epochs'] = params.pop('num-steps')
 
     create_pipeline('/mnt/data/models/pipeline.config',
         '/mnt/data/models/model.ckpt',
@@ -153,10 +156,7 @@ if __name__ == '__main__':
     extras = args.extras.split('\n')
     extras_processed = [i.split('#')[0].replace(' ','') for i in extras if i]
     params = {i.split('=')[0]:i.split('=')[1] for i in extras_processed}
-    if 'num-clones' not in params:
-        params['num-clones'] = 1
     params.update(vars(args))
-    params['epochs'] = params.pop('num-steps')
     print('Processed parameters: ', params)
     main(params)
 
