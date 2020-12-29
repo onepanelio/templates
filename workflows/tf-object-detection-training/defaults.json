@@ -1,0 +1,33 @@
+{
+    "frcnn-res50-coco": {
+        "num-clones": 1,
+        "num-steps": 10000,
+        "num_classes": 2,
+        "min_dimension": 600,
+        "max_dimension": 1024,
+        "first_stage_features_stride": 16,
+        "height_stride": 16,
+        "width_stride": 16,
+        "first_stage_regularizer_weight": 0.0,
+        "first_stage_initializer_stddev": 0.01,
+        "first_stage_nms_score_threshold": 0.0,
+        "first_stage_nms_iou_threshold": 0.7,
+        "first_stage_max_proposals": 100,
+        "first_stage_localization_loss_weight": 2.0,
+        "first_stage_objectness_loss_weight": 1.0,
+        "initial_crop_size": 14,
+        "maxpool_kernel_size": 2,
+        "maxpool_stride": 2,
+        "second_stage_regularizer_weight": 0.0,
+        "second_stage_initializer_factor": 1.0,
+        "second_stage_initializer_mode": "FAN_AVG",
+        "second_stage_use_dropout": false,
+        "second_stage_dropout_keep_probability": 1.0,
+        "second_stage_nms_score_threshold": 0.0,
+        "second_stage_nms_iou_threshold": 0.6,
+        "second_stage_max_detections_per_class": 100,
+        "second_stage_max_detections_max_total_detections": 100,
+        "second_stage_localization_loss_weight": 2.0,
+        "second_stage_classification_loss_weight": 1.0
+    }
+  }
