@@ -93,7 +93,7 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.model.faster_rcnn.maxpool_stride=int(model_params['maxpool_stride'])        
         pipeline_config.model.faster_rcnn.second_stage_box_predictor.mask_rcnn_box_predictor.fc_hyperparams.regularizer.l2_regularizer.weight=float(model_params['second_stage_regularizer_weight'])
         pipeline_config.model.faster_rcnn.second_stage_box_predictor.mask_rcnn_box_predictor.fc_hyperparams.initializer.variance_scaling_initializer.factor=float(model_params['second_stage_initializer_factor'])
-        pipeline_config.model.faster_rcnn.second_stage_box_predictor.mask_rcnn_box_predictor.fc_hyperparams.initializer.variance_scaling_initializer.mode=model_params['second_stage_initializer_mode']
+        pipeline_config.model.faster_rcnn.second_stage_box_predictor.mask_rcnn_box_predictor.fc_hyperparams.initializer.variance_scaling_initializer.mode=int(model_params['second_stage_initializer_mode'])
         pipeline_config.model.faster_rcnn.second_stage_box_predictor.mask_rcnn_box_predictor.use_dropout=model_params['second_stage_use_dropout']
         pipeline_config.model.faster_rcnn.second_stage_box_predictor.mask_rcnn_box_predictor.dropout_keep_probability=float(model_params['second_stage_dropout_keep_probability'])
         pipeline_config.model.faster_rcnn.second_stage_post_processing.batch_non_max_suppression.score_threshold=float(model_params['second_stage_nms_score_threshold'])

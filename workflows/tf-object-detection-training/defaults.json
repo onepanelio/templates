@@ -20,7 +20,7 @@
         "maxpool_stride": 2,
         "second_stage_regularizer_weight": 0.0,
         "second_stage_initializer_factor": 1.0,
-        "second_stage_initializer_mode": "FAN_AVG",
+        "second_stage_initializer_mode": 2,
         "second_stage_use_dropout": false,
         "second_stage_dropout_keep_probability": 1.0,
         "second_stage_nms_score_threshold": 0.0,
