@@ -76,8 +76,8 @@ def create_pipeline(pipeline_path, model_path, label_path,
     else:  #faster-rcnn based models
         pipeline_config.model.faster_rcnn.num_classes=int(model_params['num_classes'])
         pipeline_config.train_config.batch_size = int(model_params['num-clones'])
-        pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(model_params['min-dimension'])
-        pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.max_dimension = int(model_params['max-dimension'])
+        pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(model_params['min_dimension'])
+        pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.max_dimension = int(model_params['max_dimension'])
         pipeline_config.model.faster_rcnn.feature_extractor.first_stage_features_stride=int(model_params['first_stage_features_stride'])
         pipeline_config.model.faster_rcnn.first_stage_anchor_generator.grid_anchor_generator.height_stride=int(model_params['height_stride'])
         pipeline_config.model.faster_rcnn.first_stage_anchor_generator.grid_anchor_generator.width_stride=int(model_params['width_stride'])
