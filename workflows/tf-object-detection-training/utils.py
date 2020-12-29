@@ -123,3 +123,4 @@ def create_pipeline(pipeline_path, model_path, label_path,
     config_text = text_format.MessageToString(pipeline_config)
     with tf.gfile.Open(out_pipeline_path, 'wb') as f:
         f.write(config_text)
+    return model_params

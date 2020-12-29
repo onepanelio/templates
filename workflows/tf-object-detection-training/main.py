@@ -29,7 +29,7 @@ def main(params):
         for f in files:
             shutil.move(model_dir+'/'+f,'/mnt/data/models')
 
-    create_pipeline('/mnt/data/models/pipeline.config',
+    params = create_pipeline('/mnt/data/models/pipeline.config',
         '/mnt/data/models/model.ckpt',
         params['dataset']+'/label_map.pbtxt',
         params['dataset']+'/*.tfrecord',
