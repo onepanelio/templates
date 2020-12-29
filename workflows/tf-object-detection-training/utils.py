@@ -8,7 +8,8 @@ import tensorflow as tf
 from google.protobuf import text_format
 
 def get_default_params(model):
-    default_dict = json.loads('defaults.json')
+    with open('defaults.json', 'r') as f:
+        default_dict = json.load(f)
     return default_dict[model].copy()
 
 def process_params(params):
