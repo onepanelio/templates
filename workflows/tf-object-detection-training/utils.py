@@ -6,6 +6,7 @@ import csv
 import numpy as np
 import tensorflow as tf
 from google.protobuf import text_format
+from object_detection.protos import pipeline_pb2
 
 def get_default_params(model):
     with open('defaults.json', 'r') as f:
@@ -61,7 +62,7 @@ def convert_labels_to_csv(path):
 def create_pipeline(pipeline_path, model_path, label_path,
     train_tfrecord_path, eval_tfrecord_path, out_pipeline_path, params):
 	# We need to import here since pb files are built right before this function is called
-    from object_detection.protos import pipeline_pb2
+    # from object_detection.protos import pipeline_pb2
 
     model_params, model_architecture = process_params(params)
 
@@ -106,7 +107,10 @@ def create_pipeline(pipeline_path, model_path, label_path,
 
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.initial_learning_rate = float(model_params['initial-learning-rate'])
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].step = int(model_params['schedule-step-1'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].learning_rate = float(model_params['schedule-lr-1'])
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(model_params['schedule-step-2'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].learning_rate = float(model_params['schedule-lr-2'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.momentum_optimizer_value=float(model_params['momentum_optimizer_value'])
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
     pipeline_config.train_config.num_steps=int(model_params['epochs'])
