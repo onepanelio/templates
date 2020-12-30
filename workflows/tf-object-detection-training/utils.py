@@ -95,8 +95,8 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.model.ssd.anchor_generator.ssd_anchor_generator.max_scale = float(model_params['anchor_generator_max_scale'])
         pipeline_config.model.ssd.post_processing.batch_non_max_suppression.score_threshold = float(model_params['second_stage_nms_score_threshold'])
         pipeline_config.model.ssd.post_processing.batch_non_max_suppression.iou_threshold = float(model_params['second_stage_nms_iou_threshold'])
-        pipeline_config.model.ssd.post_processing.batch_non_max_suppression.max_detections_per_class = float(model_params['second_stage_max_detections_per_class'])
-        pipeline_config.model.ssd.post_processing.batch_non_max_suppression.max_total_detections = float(model_params['second_stage_max_detections_max_total_detections'])
+        pipeline_config.model.ssd.post_processing.batch_non_max_suppression.max_detections_per_class = int(model_params['second_stage_max_detections_per_class'])
+        pipeline_config.model.ssd.post_processing.batch_non_max_suppression.max_total_detections = int(model_params['second_stage_max_detections_max_total_detections'])
         pipeline_config.model.ssd.post_processing.loss.classification_weight = float(model_params['second_stage_classification_loss_weight'])
         pipeline_config.model.ssd.post_processing.loss.localization_weight = float(model_params['second_stage_localization_loss_weight'])
 
