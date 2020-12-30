@@ -106,7 +106,7 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.train_config.optimizer.rms_prop_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.decay = float(model_params['momentum_decay'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.epsilon = float(model_params['momentum_epsilon'])
-        pipeline_config.train_config.batch_size = int(model_params['num-clones'])
+        pipeline_config.train_config.batch_size = int(model_params['batch-size'])
     else:  #faster-rcnn based models
         pipeline_config.model.faster_rcnn.num_classes=int(model_params['num_classes'])
         pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(model_params['min_dimension'])

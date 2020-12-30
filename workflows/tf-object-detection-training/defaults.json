@@ -1,8 +1,9 @@
 {
     "frcnn-res50-coco": {
         "num-clones": 1,
+        "batch-size": 1,
         "num-steps": 10000,
-        "num_classes": 2,
+        "num_classes": 90,
         "initial-learning-rate": 0.0003,
         "schedule-step-1": 900000,
         "schedule-lr-1": 0.00003,
@@ -38,8 +39,9 @@
     },
     "frcnn-res101-coco": {
         "num-clones": 1,
+        "batch-size": 1,
         "num-steps": 10000,
-        "num_classes": 2,
+        "num_classes": 90,
         "initial-learning-rate": 0.0003,
         "schedule-step-1": 900000,
         "schedule-lr-1": 0.00003,
@@ -75,8 +77,9 @@
     },
     "frcnn-res101-low": {
         "num-clones": 1,
+        "batch-size": 1,
         "num-steps": 10,
-        "num_classes": 2,
+        "num_classes": 90,
         "initial-learning-rate": 0.0003,
         "schedule-step-1": 900000,
         "schedule-lr-1": 0.00003,
@@ -112,8 +115,9 @@
     },
     "frcnn-nas-coco": {
         "num-clones": 1,
-        "num-steps": 10,
-        "num_classes": 2,
+        "batch-size": 1,
+        "num-steps": 10000,
+        "num_classes": 90,
         "initial-learning-rate": 0.0003,
         "schedule-step-1": 900000,
         "schedule-lr-1": 0.00003,
@@ -149,8 +153,9 @@
     },
     "ssd-mobilenet-v1-coco2": {
         "num-clones": 1,
+        "batch-size": 24,
         "num-steps": 15000,
-        "num_classes": 2,
+        "num_classes": 90,
         "initial-learning-rate": 0.004,
         "decay_steps": 800720,
         "decay_factor": 0.95,
@@ -198,8 +203,9 @@
     },
     "ssd-mobilenet-v2-coco": {
         "num-clones": 1,
+        "batch-size": 24,
         "num-steps": 15000,
-        "num_classes": 2,
+        "num_classes": 90,
         "initial-learning-rate": 0.004,
         "decay_steps": 800720,
         "decay_factor": 0.95,
@@ -247,8 +253,9 @@
     },
     "ssdlite-mobilenet-coco": {
         "num-clones": 1,
-        "num-steps": 10,
-        "num_classes": 2,
+        "batch-size": 24,
+        "num-steps": 1000,
+        "num_classes": 90,
         "initial-learning-rate": 0.004,
         "decay_steps": 800720,
         "decay_factor": 0.95,
