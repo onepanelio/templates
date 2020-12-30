@@ -1,11 +1,12 @@
 # Docker containers that are part of the Workspace
 containers:
   - name: jupyterlab
-    image: onepanel/jupyterlab:1.0.1
-    command: ["/bin/bash", "-c", "pip install onepanel-sdk && start.sh jupyter lab --LabApp.token='' --LabApp.allow_remote_access=True --LabApp.allow_origin=\"*\" --LabApp.disable_check_xsrf=True --LabApp.trust_xheaders=True --LabApp.base_url=/ --LabApp.tornado_settings='{\"headers\":{\"Content-Security-Policy\":\"frame-ancestors * \'self\'\"}}' --notebook-dir='/data' --allow-root"]
+    image: onepanel/dl:0.17.0
+    command: ["/bin/bash", "-c", "pip install onepanel-sdk && start.sh LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64 jupyter lab --LabApp.token='' --LabApp.allow_remote_access=True --LabApp.allow_origin=\"*\" --LabApp.disable_check_xsrf=True --LabApp.trust_xheaders=True --LabApp.base_url=/ --LabApp.tornado_settings='{\"headers\":{\"Content-Security-Policy\":\"frame-ancestors * 'self'\"}}' --notebook-dir='/data' --allow-root"]
+    workingDir: /data
     env:
       - name: tornado
-        value: "'{'headers':{'Content-Security-Policy':\"frame-ancestors\ *\ \'self'\"}}'"
+        value: "'{'headers':{'Content-Security-Policy':\"frame-ancestors\ *\ 'self'\"}}'"
       - name: TENSORBOARD_PROXY_URL
         value: '//$(ONEPANEL_RESOURCE_UID)--$(ONEPANEL_RESOURCE_NAMESPACE).$(ONEPANEL_DOMAIN)/tensorboard'
     ports:
@@ -13,6 +14,8 @@ containers:
         name: jupyterlab
       - containerPort: 6006
         name: tensorboard
+      - containerPort: 8080
+        name: nni
     volumeMounts:
       - name: data
         mountPath: /data
@@ -45,6 +48,10 @@ ports:
     port: 6006
     protocol: TCP
     targetPort: 6006
+  - name: nni
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
 routes:
   - match:
       - uri:
@@ -53,6 +60,13 @@ routes:
       - destination:
           port:
             number: 6006
+  - match:
+      - uri:
+          prefix: /nni
+    route:
+      - destination:
+          port:
+            number: 8080
   - match:
       - uri:
           prefix: / #jupyter runs at the default route
