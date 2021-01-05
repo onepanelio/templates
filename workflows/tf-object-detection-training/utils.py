@@ -13,15 +13,42 @@ def get_default_params(model):
         default_dict = json.load(f)
     return default_dict[model].copy()
 
+def legacy_params_compatibility(params):
+    new_params = params.copy()
+    if "num-clones" in params:
+        new_params["num_clones"]=params["num-clones"]
+    if "batch-size" in params:
+        new_params["batch_size"]=params["batch-size"]
+    if "initial-learning-rate" in params:
+        new_params["initial_learning_rate"]=params["initial-learning-rate"]
+    if "learning_rate" in params:
+        new_params["initial_learning_rate"]=params["learning_rate"]
+    if "num-steps" in params:
+        new_params["num_steps"]=params["num-steps"]
+    if "schedule-step-1" in params:
+        new_params["schedule_step_1"]=params["schedule-step-1"]
+    if "schedule-lr-1" in params:
+        new_params["schedule_lr_1"]=params["schedule-lr-1"]
+    if "schedule-step-2" in params:
+        new_params["schedule_step_2"]=params["schedule-step-2"]
+    if "schedule-step-1" in params:
+        new_params["schedule_lr_2"]=params["schedule-lr-2"]
+    if "image-height" in params:
+        new_params["image_height"]=params["image-height"]
+    if "image-width" in params:
+        new_params["image_width"]=params["image-width"]
+    return new_params
+
 def process_params(params):
     model_params = get_default_params(params['model'])
+    params = legacy_params_compatibility(params)
 
     if ('ssd-mobilenet-v2-coco' in params['model'] or 'ssd-mobilenet-v1-coco2' in params['model']) or 'ssdlite-mobilenet-coco' in params['model']:
         model_architecture = 'ssd'
     else:
         model_architecture = 'frcnn'
 
-    model_params['epochs'] = params.pop('num-steps')
+    model_params['epochs'] = params.pop('num_steps')
 
     for key in params.keys():
         model_params[key] = params[key]
@@ -61,8 +88,8 @@ def create_pipeline(pipeline_path, model_path, label_path,
         text_format.Merge(proto_str, pipeline_config)
     if model_architecture == 'ssd':
         pipeline_config.model.ssd.num_classes=int(model_params['num_classes'])
-        pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.height = int(model_params['image-height'])
-        pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.width = int(model_params['image-width'])
+        pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.height = int(model_params['image_height'])
+        pipeline_config.model.ssd.image_resizer.fixed_shape_resizer.width = int(model_params['image_width'])
         pipeline_config.model.ssd.feature_extractor.depth_multiplier=float(model_params['depth_multiplier'])
         pipeline_config.model.ssd.feature_extractor.min_depth = int(model_params['min_depth'])
         pipeline_config.model.ssd.feature_extractor.conv_hyperparams.regularizer.l2_regularizer.weight = float(model_params['first_stage_regularizer_weight'])
@@ -100,13 +127,13 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.model.ssd.loss.classification_weight = float(model_params['second_stage_classification_loss_weight'])
         pipeline_config.model.ssd.loss.localization_weight = float(model_params['second_stage_localization_loss_weight'])
 
-        pipeline_config.train_config.optimizer.rms_prop_optimizer.learning_rate.exponential_decay_learning_rate.initial_learning_rate = float(model_params['initial-learning-rate'])
+        pipeline_config.train_config.optimizer.rms_prop_optimizer.learning_rate.exponential_decay_learning_rate.initial_learning_rate = float(model_params['initial_learning_rate'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.learning_rate.exponential_decay_learning_rate.decay_steps = int(model_params['decay_steps'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.learning_rate.exponential_decay_learning_rate.decay_factor = float(model_params['decay_factor'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.decay = float(model_params['momentum_decay'])
         pipeline_config.train_config.optimizer.rms_prop_optimizer.epsilon = float(model_params['momentum_epsilon'])
-        pipeline_config.train_config.batch_size = int(model_params['batch-size'])
+        pipeline_config.train_config.batch_size = int(model_params['batch_size'])
     else:  #faster-rcnn based models
         pipeline_config.model.faster_rcnn.num_classes=int(model_params['num_classes'])
         pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.min_dimension = int(model_params['min_dimension'])
@@ -136,13 +163,13 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.model.faster_rcnn.second_stage_localization_loss_weight = float(model_params['second_stage_localization_loss_weight'])
         pipeline_config.model.faster_rcnn.second_stage_classification_loss_weight = float(model_params['second_stage_classification_loss_weight'])
 
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.initial_learning_rate = float(model_params['initial-learning-rate'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].step = int(model_params['schedule-step-1'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].learning_rate = float(model_params['schedule-lr-1'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(model_params['schedule-step-2'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].learning_rate = float(model_params['schedule-lr-2'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.initial_learning_rate = float(model_params['initial_learning_rate'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].step = int(model_params['schedule_step_1'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].learning_rate = float(model_params['schedule_lr_1'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(model_params['schedule_step_2'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].learning_rate = float(model_params['schedule_lr_2'])
         pipeline_config.train_config.optimizer.momentum_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
-        pipeline_config.train_config.batch_size = int(model_params['num-clones'])
+        pipeline_config.train_config.batch_size = int(model_params['num_clones'])
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
     pipeline_config.train_config.num_steps=int(model_params['epochs'])
