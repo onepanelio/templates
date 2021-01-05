@@ -43,7 +43,7 @@ def main(params):
         '/mnt/src/tf/research/object_detection/legacy/train.py',
         '--train_dir=/mnt/output/',
         '--pipeline_config_path=/mnt/output/pipeline.config',
-        '--num_clones={}'.format(params['num-clones'])
+        '--num_clones={}'.format(params['num_clones'])
     ])
     subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/export_inference_graph.py',
