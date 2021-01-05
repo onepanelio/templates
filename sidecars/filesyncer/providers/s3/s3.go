@@ -2,10 +2,10 @@ package s3
 
 import (
 	"fmt"
-	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 	"log"
 	"os/exec"
-	"strings"
+
+	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 )
 
 func resolveEnv(cmd *exec.Cmd) {
@@ -44,7 +44,9 @@ func Sync() {
 
 	nonS3 := config.S3.Endpoint != "s3.amazonaws.com"
 	nonS3Endpoint := config.S3.Endpoint
-	if nonS3 && !strings.HasPrefix(nonS3Endpoint, "http://") && !strings.HasPrefix(nonS3Endpoint, "https://") {
+	if nonS3 && config.S3.Insecure {
+		nonS3Endpoint = "http://" + nonS3Endpoint
+	} else {
 		nonS3Endpoint = "https://" + nonS3Endpoint
 	}
 
