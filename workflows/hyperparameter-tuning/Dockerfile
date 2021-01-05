@@ -8,7 +8,10 @@ RUN apt-get update \
  && apt-get install -y jq \
  && rm -rf /var/lib/apt/lists/*
 
-RUN pip --no-cache-dir install nni==1.9 ruamel_yaml==0.11.14 'glances[web,gpu]'
+RUN pip --no-cache-dir install nni==1.9 ruamel_yaml==0.11.14 \
+    'glances[web,gpu]' \
+    albumentations \
+    imgaug
 
 COPY start.py /opt/onepanel/nni/
 
