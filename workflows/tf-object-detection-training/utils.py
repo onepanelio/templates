@@ -16,27 +16,28 @@ def get_default_params(model):
 def legacy_params_compatibility(params):
     new_params = params.copy()
     if "num-clones" in params:
-        new_params["num_clones"]=params["num-clones"]
+        new_params["num_clones"] = params["num-clones"]
     if "batch-size" in params:
-        new_params["batch_size"]=params["batch-size"]
+        new_params["batch_size"] = params["batch-size"]
     if "initial-learning-rate" in params:
-        new_params["initial_learning_rate"]=params["initial-learning-rate"]
+        new_params["initial_learning_rate"] = params["initial-learning-rate"]
     if "learning_rate" in params:
-        new_params["initial_learning_rate"]=params["learning_rate"]
+        new_params["initial_learning_rate"] = params["learning_rate"]
     if "num-steps" in params:
-        new_params["num_steps"]=params["num-steps"]
+        new_params["num_steps"] = params["num-steps"]
     if "schedule-step-1" in params:
-        new_params["schedule_step_1"]=params["schedule-step-1"]
+        new_params["schedule_step_1"] = params["schedule-step-1"]
     if "schedule-lr-1" in params:
-        new_params["schedule_lr_1"]=params["schedule-lr-1"]
+        new_params["schedule_lr_1"] = params["schedule-lr-1"]
     if "schedule-step-2" in params:
-        new_params["schedule_step_2"]=params["schedule-step-2"]
+        new_params["schedule_step_2"] = params["schedule-step-2"]
     if "schedule-step-1" in params:
-        new_params["schedule_lr_2"]=params["schedule-lr-2"]
+        new_params["schedule_lr_2"] = params["schedule-lr-2"]
     if "image-height" in params:
-        new_params["image_height"]=params["image-height"]
+        new_params["image_height"] = params["image-height"]
     if "image-width" in params:
-        new_params["image_width"]=params["image-width"]
+        new_params["image_width"] = params["image-width"]
+    
     return new_params
 
 def process_params(params):
