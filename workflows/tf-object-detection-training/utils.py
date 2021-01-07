@@ -174,6 +174,8 @@ def create_pipeline(pipeline_path, model_path, label_path,
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
     pipeline_config.train_config.num_steps=int(model_params['epochs'])
+    if len(model_params['sys_finetune_checkpoint'])>1:
+        pipeline_config.train_config.load_all_detection_checkpoint_vars=True
     pipeline_config.train_input_reader.label_map_path=label_path
     pipeline_config.train_input_reader.tf_record_input_reader.input_path[0]=train_tfrecord_path
 
