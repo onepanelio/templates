@@ -174,16 +174,16 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.train_config.optimizer.momentum_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
         pipeline_config.train_config.batch_size = int(model_params['num_clones'])
 
-    pipeline_config.train_config.fine_tune_checkpoint=model_path
-    pipeline_config.train_config.fine_tune_checkpoint_type="detection"
+    pipeline_config.train_config.fine_tune_checkpoint = model_path
+    pipeline_config.train_config.fine_tune_checkpoint_type = "detection"
     pipeline_config.train_config.num_steps = int(model_params['epochs'])
     if len(model_params['sys_finetune_checkpoint'])>1:
-        pipeline_config.train_config.load_all_detection_checkpoint_vars=True
-    pipeline_config.train_input_reader.label_map_path=label_path
-    pipeline_config.train_input_reader.tf_record_input_reader.input_path[0]=train_tfrecord_path
+        pipeline_config.train_config.load_all_detection_checkpoint_vars = True
+    pipeline_config.train_input_reader.label_map_path = label_path
+    pipeline_config.train_input_reader.tf_record_input_reader.input_path[0] = train_tfrecord_path
 
-    pipeline_config.eval_input_reader[0].label_map_path=label_path
-    pipeline_config.eval_input_reader[0].tf_record_input_reader.input_path[0]=eval_tfrecord_path
+    pipeline_config.eval_input_reader[0].label_map_path = label_path
+    pipeline_config.eval_input_reader[0].tf_record_input_reader.input_path[0] = eval_tfrecord_path
 
     config_text = text_format.MessageToString(pipeline_config)
     with tf.io.gfile.GFile(out_pipeline_path, 'wb') as f:
