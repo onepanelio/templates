@@ -45,7 +45,8 @@ def main(params):
         '/mnt/src/tf/research/object_detection/model_main_tf2.py',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--model_dir=/mnt/output/',
-        '--num_train_steps={}'.format(params['epochs'])
+        '--num_train_steps={}'.format(params['epochs']),
+        '--alsologtostderr'
     ])
     if return_code != 0:
         print(return_code)
