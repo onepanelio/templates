@@ -20,11 +20,11 @@ arguments:
       visibility: public
       options:
         - name: 'Faster RCNN-ResNet 101-COCO'
-          value: frcnn-res101-coco-v2
+          value: frcnn-res101-coco
         - name: 'Faster RCNN-ResNet 101-Low Proposal-COCO'
           value: frcnn-res101-low
         - name: 'Faster RCNN-ResNet 50-COCO'
-          value: frcnn-res50-coco-v2
+          value: frcnn-res50-coco
         - name: 'Faster RCNN-NAS-COCO'
           value: frcnn-nas-coco
         - name: 'SSD MobileNet V1-COCO'
@@ -90,7 +90,6 @@ templates:
         - |
           apt-get update && \
           apt-get install -y git wget unzip libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1-mesa-glx && \
-          pip install test-generator && \
           cd /mnt/src/tf/research && \
           mkdir -p /mnt/src/protoc && \
           wget -P /mnt/src/protoc https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-linux-x86_64.zip && \
@@ -100,9 +99,9 @@ templates:
           /mnt/src/protoc/bin/protoc object_detection/protos/*.proto --python_out=. && \
           cp object_detection/packages/tf2/setup.py . && \
           python -m pip install --use-feature=2020-resolver . && \
-          cd /mnt/src/train/workflows/tf-object-detection-training && \
+          cd /mnt/src/train/workflows/tf-object-detection-training-tf2 && \
           python main.py \
-            --extras="{{workflow.parameters.hyperparametetemplate copyrs}}" \
+            --extras="{{workflow.parameters.hyperparameters}}" \
             --model="{{workflow.parameters.cvat-model}}" \
             --num_classes="{{workflow.parameters.cvat-num-classes}}" \
             --sys_finetune_checkpoint={{workflow.parameters.cvat-finetune-checkpoint}}
@@ -146,6 +145,21 @@ templates:
           path: /mnt/output
           s3:
             key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
+    sidecars:
+      - name: tensorboard
+        image: tensorflow/tensorflow:2.3.0
+        command:
+          - sh
+          - '-c'
+        env:
+          - name: ONEPANEL_INTERACTIVE_SIDECAR
+            value: 'true'
+        args:
+          # Read logs from /mnt/output - this directory is auto-mounted from volumeMounts
+          - tensorboard --logdir /mnt/output/train/
+        ports:
+          - containerPort: 6006
+            name: tensorboard
 volumeClaimTemplates:
   - metadata:
       name: data
