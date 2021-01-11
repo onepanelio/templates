@@ -55,7 +55,7 @@ def process_params(params):
     model_params['epochs'] = params.pop('num_steps')
     model_params['epochs'] = max(int(model_params['epochs']), 2)
 
-    if int(model_params['warmup_steps']) <= model_params['epochs']:
+    if int(model_params['warmup_steps']) >= model_params['epochs']:
         model_params['warmup_steps'] = int(max(float(model_params['epochs']) * 0.2, 2))
 
     return model_params, model_architecture

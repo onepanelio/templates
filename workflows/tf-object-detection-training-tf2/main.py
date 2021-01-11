@@ -48,6 +48,7 @@ def main(params):
         '--num_train_steps={}'.format(params['epochs'])
     ])
     if return_code != 0:
+        print(return_code)
         raise RuntimeError('Training process failed')
     return_code = subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/exporter_main_v2.py',
@@ -57,6 +58,7 @@ def main(params):
         '--output_directory=/mnt/output/model/'
     ])
     if return_code != 0:
+        print(return_code)
         raise RuntimeError('Model export process failed')
 
     # generate lable map
