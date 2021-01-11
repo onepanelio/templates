@@ -54,6 +54,11 @@ def process_params(params):
     for key in params.keys():
         model_params[key] = params[key]
 
+    model_params['epochs'] = max(int(model_params['epochs']), 2)
+
+    if int(model_params['warmup_steps']) <= model_params['epochs']:
+        model_params['warmup_steps'] <= int(max(float(model_params['epochs']) * 0.2, 2))
+
     return model_params, model_architecture
 
 def convert_labels_to_csv(path):
