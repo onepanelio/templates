@@ -163,17 +163,16 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.model.faster_rcnn.second_stage_localization_loss_weight = float(model_params['second_stage_localization_loss_weight'])
         pipeline_config.model.faster_rcnn.second_stage_classification_loss_weight = float(model_params['second_stage_classification_loss_weight'])
 
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.initial_learning_rate = float(model_params['initial_learning_rate'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].step = int(model_params['schedule_step_1'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[0].learning_rate = float(model_params['schedule_lr_1'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(model_params['schedule_step_2'])
-        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].learning_rate = float(model_params['schedule_lr_2'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.cosine_decay_learning_rate.learning_rate_base = float(model_params['initial_learning_rate'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.cosine_decay_learning_rate.total_steps = int(model_params['epochs'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.cosine_decay_learning_rate.warmup_learning_rate = float(model_params['warmup_learning_rate'])
+        pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.cosine_decay_learning_rate.warmup_steps = int(model_params['warmup_steps'])
         pipeline_config.train_config.optimizer.momentum_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
         pipeline_config.train_config.batch_size = int(model_params['num_clones'])
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
     pipeline_config.train_config.fine_tune_checkpoint_type="detection"
-    pipeline_config.train_config.num_steps=int(model_params['epochs'])
+    pipeline_config.train_config.num_steps = int(model_params['epochs'])
     if len(model_params['sys_finetune_checkpoint'])>1:
         pipeline_config.train_config.load_all_detection_checkpoint_vars=True
     pipeline_config.train_input_reader.label_map_path=label_path
