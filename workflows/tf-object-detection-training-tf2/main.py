@@ -41,19 +41,23 @@ def main(params):
 
     os.chdir('/mnt/output')
     os.mkdir('eval/')
-    subprocess.call(['python',
+    return_code = subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/model_main_tf2.py',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--model_dir=/mnt/output/',
         '--num_train_steps={}'.format(params['epochs'])
     ])
-    subprocess.call(['python',
+    if return_code != 0:
+        raise RuntimeError('Training process failed')
+    return_code = subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/exporter_main_v2.py',
         '--input_type=image_tensor',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--trained_checkpoint_dir=/mnt/output/',
         '--output_directory=/mnt/output/model/'
     ])
+    if return_code != 0:
+        raise RuntimeError('Model export process failed')
 
     # generate lable map
     convert_labels_to_csv(params['dataset'])
