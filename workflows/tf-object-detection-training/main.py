@@ -40,10 +40,10 @@ def main(params):
     os.chdir('/mnt/output')
     os.mkdir('eval/')
     return_code = subprocess.call(['python',
-        '/mnt/src/tf/research/object_detection/legacy/train.py',
-        '--train_dir=/mnt/output/',
+        '/mnt/src/tf/research/object_detection/model_main.py',
+        '--model_dir=/mnt/output/',
         '--pipeline_config_path=/mnt/output/pipeline.config',
-        '--num_clones={}'.format(params['num_clones']),
+        '--num_train_steps={}'.format(params['epochs']),
         '--alsologtostderr'
     ])
     if return_code != 0:
