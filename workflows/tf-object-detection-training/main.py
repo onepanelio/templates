@@ -41,10 +41,10 @@ def main(params):
     os.mkdir('eval/')
     return_code = subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/model_main.py',
+        '--alsologtostderr',
         '--model_dir=/mnt/output/',
         '--pipeline_config_path=/mnt/output/pipeline.config',
-        '--num_train_steps={}'.format(params['epochs']),
-        '--alsologtostderr'
+        '--num_train_steps={}'.format(params['epochs'])
     ])
     if return_code != 0:
         raise RuntimeError('Training process failed')

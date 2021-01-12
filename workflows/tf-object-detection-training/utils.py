@@ -48,11 +48,12 @@ def process_params(params):
         model_architecture = 'ssd'
     else:
         model_architecture = 'frcnn'
+    
+    model_params['eval_interval_secs'] = 3000
+    model_params['epochs'] = params.pop('num_steps')
 
     for key in params.keys():
         model_params[key] = params[key]
-
-    model_params['epochs'] = params.pop('num_steps')
 
     return model_params, model_architecture
 
@@ -181,6 +182,7 @@ def create_pipeline(pipeline_path, model_path, label_path,
 
     pipeline_config.eval_input_reader[0].label_map_path=label_path
     pipeline_config.eval_input_reader[0].tf_record_input_reader.input_path[0]=eval_tfrecord_path
+    pipeline_config.eval_config.eval_interval_secs = model_params['eval_interval_secs']
 
     config_text = text_format.MessageToString(pipeline_config)
     with tf.gfile.Open(out_pipeline_path, 'wb') as f:
