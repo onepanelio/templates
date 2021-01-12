@@ -41,6 +41,7 @@ def main(params):
     os.mkdir('eval/')
     subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/legacy/train.py',
+        '--alsologtostderr'
         '--train_dir=/mnt/output/',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--num_clones={}'.format(params['num_clones'])
