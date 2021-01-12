@@ -49,10 +49,10 @@ def process_params(params):
     else:
         model_architecture = 'frcnn'
 
-    model_params['epochs'] = params.pop('num_steps')
-
     for key in params.keys():
         model_params[key] = params[key]
+
+    model_params['epochs'] = params.pop('num_steps')
 
     return model_params, model_architecture
 
