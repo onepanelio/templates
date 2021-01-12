@@ -31,7 +31,7 @@ import os
 import sys
 import time
 import numpy as np
-from tensorflow.python.client import device_lib
+from tensorflow.config import list_physical_devices
 import glob
 import boto3
 
@@ -89,8 +89,7 @@ class CocoConfig(Config):
 
     # Uncomment to train on 8 GPUs (default is 1)
     GPU_COUNT = 1
-    local_device_protos = device_lib.list_local_devices()
-    num_gpus = len([x.name for x in local_device_protos if x.device_type == 'GPU'])
+    num_gpus = len(list_physical_devices(device_type='GPU'))
     if num_gpus in [2,4,8]:
     	GPU_COUNT = num_gpus
 
@@ -465,8 +464,7 @@ if __name__ == '__main__':
             # Set batch size to 1 since we'll be running inference on
             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
             GPU_COUNT = 1
-            local_device_protos = device_lib.list_local_devices()
-            num_gpus = len([x.name for x in local_device_protos if x.device_type == 'GPU'])
+            num_gpus = len(list_physical_devices(device_type='GPU'))
             if num_gpus in [2,4,8]:
     	        GPU_COUNT = num_gpus
             IMAGES_PER_GPU = 1
