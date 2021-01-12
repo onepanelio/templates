@@ -72,7 +72,7 @@ DEFAULT_DATASET_YEAR = "2014"
 ############################################################
 
 
-class CocoConfig(Config):
+class OnepanelConfig(Config):
     """Configuration for training on MS COCO.
     Derives from the base Config class and overrides values specific
     to the COCO dataset.
@@ -81,7 +81,7 @@ class CocoConfig(Config):
     	self.NUM_CLASSES = num_classes
     	super().__init__()
     # Give the configuration a recognizable name
-    NAME = "cvat"
+    NAME = "onepanel"
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
@@ -457,10 +457,10 @@ if __name__ == '__main__':
        
     # Configurations
     if args.command == "train":
-        config = CocoConfig(int(args.num_classes))
+        config = OnepanelConfig(int(args.num_classes))
         # config.NUM_CLASSES = args.num_classes
     else:
-        class InferenceConfig(CocoConfig):
+        class InferenceConfig(OnepanelConfig):
             # Set batch size to 1 since we'll be running inference on
             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
             GPU_COUNT = 1
