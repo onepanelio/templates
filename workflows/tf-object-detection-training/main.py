@@ -45,7 +45,11 @@ def main(params):
         params)
 
     os.chdir('/mnt/output')
-    os.mkdir('eval/')
+    directory = 'eval/'
+    try:
+        os.stat(directory)
+    except:
+        os.mkdir(directory)
     return_code = subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/model_main.py',
         '--alsologtostderr',
