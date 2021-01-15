@@ -76,7 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--sys_finetune_checkpoint', default=' ', help='path to checkpoint')
     parser.add_argument('--model', default='frcnn-res50-coco', help='which model to train')
     parser.add_argument('--num_classes', default=81, type=int, help='number of classes')
-    parser.add_argument('--from_preprocessing', action=argparse.BooleanOptionalAction)
+    parser.add_argument('--from_preprocessing', default=False, type=bool)
     args = parser.parse_args()
     # parse parameters
     # sample: epochs=100;num_classes=1
