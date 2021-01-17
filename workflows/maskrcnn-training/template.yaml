@@ -32,6 +32,7 @@ arguments:
         stage-1-epochs=1    #  Epochs for network heads
         stage-2-epochs=2    #  Epochs for finetune layers
         stage-3-epochs=3    #  Epochs for all layers
+        num_steps=1000     #   Num steps per epoch
       hint: "See <a href='https://docs.onepanel.ai/docs/getting-started/use-cases/computervision/annotation/cvat/cvat_annotation_model#maskrcnn-hyperparameters' target='_blank'>documentation</a> for more information on parameters."
 
     - name: dump-format
@@ -50,6 +51,8 @@ arguments:
           value: 'tensorflow/tensorflow:2.4.0'
         - name: 'TensorFlow 2.4.0 GPU Image'
           value: 'tensorflow/tensorflow:2.4.0-gpu'
+        - name: 'Onepanel DL v0.17'
+          value: 'onepanel/dl:0.17.0'
 
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
@@ -70,11 +73,11 @@ templates:
       args:
         - |
           apt-get update \
-          && apt-get install -y git wget libglib2.0-0 libsm6 libxext6 libxrender-dev \
+          && apt-get install -y git wget libgl1-mesa-glx libsm6 libxext6 libxrender-dev \
           && pip install --upgrade pip \
           && pip install pycocotools numpy scipy scikit-image imgaug boto3 \
           && wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5 \
-          && cd cd /mnt/src/train/workflows/maskrcnn-training \
+          && cd /mnt/src/train/workflows/maskrcnn-training \
           && python main.py train --dataset=/mnt/data/datasets \
             --model=workflow_maskrcnn \
             --extras="{{workflow.parameters.hyperparameters}}"  \
@@ -93,7 +96,7 @@ templates:
       workingDir: /mnt/src
     sidecars:
       - name: tensorboard
-        image: tensorflow/tensorflow:2.3.0
+        image: tensorflow/tensorflow:2.4.0
         command: [ sh, -c ]
         env:
           - name: ONEPANEL_INTERACTIVE_SIDECAR
@@ -113,7 +116,7 @@ templates:
         - git:
             repo: https://github.com/onepanelio/templates.git
           name: src
-          path: /mnt/src
+          path: /mnt/src/train
     name: tensorflow
     outputs:
       artifacts:
