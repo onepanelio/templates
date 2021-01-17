@@ -30,8 +30,10 @@ if __name__ == '__main__':
 	stamp = time.strftime("%m%d%Y%H%M%S")
 	dataset_name = "maskrcnn-model-output-{}".format(stamp)
 
+	model_path = ''
+
 	for i,_,_ in os.walk("/mnt/output/logs"):
-		if "cvat" in i:
+		if "onepanel" in i:
 			model_path = i
 	if not model_path.endswith("/"):
 		model_path += "/"
