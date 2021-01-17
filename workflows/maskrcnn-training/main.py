@@ -40,7 +40,7 @@ import imgaug  # https://github.com/aleju/imgaug (pip3 install imgaug)
 # Download and install the Python COCO tools from https://github.com/waleedka/coco
 # That's a fork from the original https://github.com/pdollar/coco with a bug
 # fix for Python 3.
-# I submitted a pull request https://github.com/cocodataset/cocoapi/pull/50
+# I submitted a pull request https://github.com/Onepaneldataset/cocoapi/pull/50
 # If the PR is merged then use the original repo.
 # Note: Edit PythonAPI/Makefile and replace "python" with "python3".
 from pycocotools.coco import COCO
@@ -78,7 +78,7 @@ class OnepanelConfig(Config):
     to the COCO dataset.
     """
     def __init__(self, num_classes, num_steps):
-    	self.NUM_CLASSES = num_classes
+        self.NUM_CLASSES = num_classes
         self.STEPS_PER_EPOCH = num_steps
     	super().__init__()
     # Give the configuration a recognizable name
@@ -101,7 +101,7 @@ class OnepanelConfig(Config):
 #  Dataset
 ############################################################
 
-class CocoDataset(utils.Dataset):
+class OnepanelDataset(utils.Dataset):
     def load_coco(self, dataset_dir, subset, year=DEFAULT_DATASET_YEAR, class_ids=None,
                   class_map=None, return_coco=False, auto_download=False):
         """Load a subset of the COCO dataset.
@@ -170,11 +170,11 @@ class CocoDataset(utils.Dataset):
         if dataType == "minival" or dataType == "valminusminival":
             imgDir = "{}/{}{}".format(dataDir, "val", dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, "val", dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format("val", dataYear)
+            imgURL = "http://images.Onepaneldataset.org/zips/{}{}.zip".format("val", dataYear)
         else:
             imgDir = "{}/{}{}".format(dataDir, dataType, dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, dataType, dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(dataType, dataYear)
+            imgURL = "http://images.Onepaneldataset.org/zips/{}{}.zip".format(dataType, dataYear)
         # print("Image paths:"); print(imgDir); print(imgZipFile); print(imgURL)
 
         # Create main folder if it doesn't exist yet
@@ -209,7 +209,7 @@ class CocoDataset(utils.Dataset):
         else:
             annZipFile = "{}/annotations_trainval{}.zip".format(dataDir, dataYear)
             annFile = "{}/instances_{}{}.json".format(annDir, dataType, dataYear)
-            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
+            annURL = "http://images.Onepaneldataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
             unZipDir = dataDir
         # print("Annotations paths:"); print(annDir); print(annFile); print(annZipFile); print(annURL)
 
@@ -243,7 +243,7 @@ class CocoDataset(utils.Dataset):
         # If not a COCO image, delegate to parent class.
         image_info = self.image_info[image_id]
         if image_info["source"] != "coco":
-            return super(CocoDataset, self).load_mask(image_id)
+            return super(OnepanelDataset, self).load_mask(image_id)
 
         instance_masks = []
         class_ids = []
@@ -278,15 +278,15 @@ class CocoDataset(utils.Dataset):
             return mask, class_ids
         else:
             # Call super class to return an empty mask
-            return super(CocoDataset, self).load_mask(image_id)
+            return super(OnepanelDataset, self).load_mask(image_id)
 
     def image_reference(self, image_id):
         """Return a link to the image in the COCO Website."""
         info = self.image_info[image_id]
         if info["source"] == "coco":
-            return "http://cocodataset.org/#explore?id={}".format(info["id"])
+            return "http://Onepaneldataset.org/#explore?id={}".format(info["id"])
         else:
-            super(CocoDataset, self).image_reference(image_id)
+            super(OnepanelDataset, self).image_reference(image_id)
 
     # The following two functions are from pycocotools with a few changes.
 
@@ -324,7 +324,7 @@ class CocoDataset(utils.Dataset):
 ############################################################
 
 def build_coco_results(dataset, image_ids, rois, class_ids, scores, masks):
-    """Arrange resutls to match COCO specs in http://cocodataset.org/#format
+    """Arrange resutls to match COCO specs in http://Onepaneldataset.org/#format
     """
     # If no results, return an empty list
     if rois is None:
@@ -526,14 +526,14 @@ if __name__ == '__main__':
     if args.command == "train":
         # Training dataset. Use the training set and 35K from the
         # validation set, as as in the Mask RCNN paper.
-        dataset_train = CocoDataset()
+        dataset_train = OnepanelDataset()
         dataset_train.load_coco(args.dataset, "train", year=args.year, auto_download=args.download)
 #         if args.year in '2014':
 #             dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
         dataset_train.prepare()
 
         # Validation dataset
-#         dataset_val = CocoDataset()
+#         dataset_val = OnepanelDataset()
 #         val_type = "val" if args.year in '2017' else "minival"
 #         dataset_val.load_coco(args.dataset, val_type, year=args.year, auto_download=args.download)
 #         dataset_val.prepare()
@@ -572,7 +572,7 @@ if __name__ == '__main__':
 
     elif args.command == "evaluate":
         # Validation dataset
-        dataset_val = CocoDataset()
+        dataset_val = OnepanelDataset()
         val_type = "val" if args.year in '2017' else "minival"
         coco = dataset_val.load_coco(args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
         dataset_val.prepare()
