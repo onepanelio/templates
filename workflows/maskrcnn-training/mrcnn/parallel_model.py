@@ -1,11 +1,9 @@
 """
 Mask R-CNN
 Multi-GPU Support for Keras.
-
 Copyright (c) 2017 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
-
 Ideas and a small code snippets from these sources:
 https://github.com/fchollet/keras/issues/2436
 https://medium.com/@kuza55/transparent-multi-gpu-training-on-tensorflow-with-keras-8b0016fd9012
@@ -14,9 +12,9 @@ https://github.com/fchollet/keras/blob/master/keras/utils/training_utils.py
 """
 
 import tensorflow as tf
-import tensorflow.keras.backend as K
-import tensorflow.keras.layers as KL
-import tensorflow.keras.models as KM
+import keras.backend as K
+import keras.layers as KL
+import keras.models as KM
 
 
 class ParallelModel(KM.Model):
@@ -32,7 +30,6 @@ class ParallelModel(KM.Model):
         keras_model: The Keras model to parallelize
         gpu_count: Number of GPUs. Must be > 1
         """
-        super(ParallelModel, self).__init__()
         self.inner_model = keras_model
         self.gpu_count = gpu_count
         merged_outputs = self.make_parallel()
