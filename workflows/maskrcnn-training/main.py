@@ -77,8 +77,9 @@ class OnepanelConfig(Config):
     Derives from the base Config class and overrides values specific
     to the COCO dataset.
     """
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, num_steps):
     	self.NUM_CLASSES = num_classes
+        self.STEPS_PER_EPOCH = num_steps
     	super().__init__()
     # Give the configuration a recognizable name
     NAME = "onepanel"
@@ -457,7 +458,7 @@ if __name__ == '__main__':
        
     # Configurations
     if args.command == "train":
-        config = OnepanelConfig(int(args.num_classes))
+        config = OnepanelConfig(int(args.num_classes), int(params['num_steps']))
         # config.NUM_CLASSES = args.num_classes
     else:
         class InferenceConfig(OnepanelConfig):
