@@ -78,24 +78,16 @@ class OnepanelConfig(Config):
     to the COCO dataset.
     """
     def __init__(self, num_classes, num_steps):
+        self.NAME = "onepanel"
         self.NUM_CLASSES = num_classes
         self.STEPS_PER_EPOCH = num_steps
-    	super().__init__()
-    # Give the configuration a recognizable name
-    NAME = "onepanel"
-
-    # We use a GPU with 12GB memory, which can fit two images.
-    # Adjust down if you use a smaller GPU.
-    IMAGES_PER_GPU = 1
-
-    # Uncomment to train on 8 GPUs (default is 1)
-    GPU_COUNT = 1
-    num_gpus = len(list_physical_devices(device_type='GPU'))
-    if num_gpus in [2,4,8]:
-    	GPU_COUNT = num_gpus
-
-    # Number of classes (including background)
-    # NUM_CLASSES = num_classes  # take form user *************************
+        self.IMAGES_PER_GPU = 1
+        self.GPU_COUNT = 1
+        num_gpus = len(list_physical_devices(device_type='GPU'))
+        if num_gpus in [2,4,8]:
+            self.GPU_COUNT = num_gpus
+        super().__init__()
+    
 
 ############################################################
 #  Dataset
