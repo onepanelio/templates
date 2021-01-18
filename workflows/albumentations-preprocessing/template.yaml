@@ -1,0 +1,125 @@
+arguments:
+  parameters:
+    - name: cvat-annotation-path
+      value: annotation-dump/sample_dataset
+      displayName: Dataset path
+      hint: Path to annotated data (COCO format) in default object storage. In CVAT, this parameter will be pre-populated.
+      visibility: internal
+
+    - name: cvat-output-path
+      value: workflow-data/output/sample_output
+      hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
+      displayName: Workflow output path
+      visibility: internal
+      
+    - name: val-split
+      value: 20
+      displayName: Validation split size
+      type: input.number
+      visibility: public
+      hint: Enter validation set size in percentage of full dataset. (0 - 100)
+      
+    - name: num-augmentation-cycles
+      value: 1
+      displayName: Number of augmentation cycles
+      type: input.number
+      visibility: public
+      hint: Number of augmentation cycles, zero means no data augmentation
+
+    - name: preprocessing-parameters
+      value: |-
+        RandomBrightnessContrast:
+            p: 0.2
+        GaussianBlur:
+            p: 0.3
+        GaussNoise:
+            p: 0.4
+        HorizontalFlip:
+            p: 0.5
+        VerticalFlip:
+            p: 0.3
+      displayName: Preprocessing parameters
+      visibility: public
+      type: textarea.textarea
+      hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
+
+    - name: preprocessing-image
+      value: tensorflow/tensorflow:2.4.0
+      displayName: TensorFlow image for preprocessing
+      visibility: internal
+      hint: Select the GPU image if you are running on a GPU node pool
+
+    - name: dump-format
+      value: cvat_coco
+      visibility: public
+
+    - displayName: Node pool
+      hint: Name of node pool or group to run this workflow task
+      name: preprocessing-node-pool
+      value: default
+      visibility: internal
+      required: true
+
+entrypoint: main
+templates:
+  - dag:
+      tasks:
+        - name: preprocessing-phase
+          template: preprocessing
+    name: main
+  - container:
+      args:
+        - |
+          pip install opencv-python albumentations tqdm pyyaml pycocotools && \
+          cd /mnt/src/preprocessing/workflows/albumentations-preprocessing && \
+          python main.py \
+            --data_aug_params="{{workflow.parameters.preprocessing-parameters}}" \
+            --val_split={{workflow.parameters.val-split}} \
+            --aug_steps={{workflow.parameters.num-augmentation-cycles}}
+      command:
+        - sh
+        - -c
+      image: '{{workflow.parameters.preprocessing-image}}'
+      volumeMounts:
+        - mountPath: /mnt/data
+          name: data
+        - mountPath: /mnt/output
+          name: output
+      workingDir: /mnt/src
+    nodeSelector:
+      beta.kubernetes.io/instance-type: '{{workflow.parameters.preprocessing-node-pool}}'
+    inputs:
+      artifacts:
+        - name: data
+          path: /mnt/data/datasets/
+          s3:
+            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+        - git:
+            repo: https://github.com/onepanelio/templates.git
+          name: src
+          path: /mnt/src/preprocessing
+    name: preprocessing
+    outputs:
+      artifacts:
+        - name: processed-data
+          optional: true
+          path: /mnt/output
+          s3:
+            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
+volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 200Gi
+  - metadata:
+      name: output
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 200Gi
