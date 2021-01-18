@@ -36,7 +36,7 @@ arguments:
 
     - name: hyperparameters
       value: |-
-        num-steps=10000
+        num_steps=10000
       displayName: Hyperparameters
       visibility: public
       type: textarea.textarea
@@ -145,6 +145,21 @@ templates:
           path: /mnt/output
           s3:
             key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
+    sidecars:
+      - name: tensorboard
+        image: tensorflow/tensorflow:2.3.0
+        command:
+          - sh
+          - '-c'
+        env:
+          - name: ONEPANEL_INTERACTIVE_SIDECAR
+            value: 'true'
+        args:
+          # Read logs from /mnt/output - this directory is auto-mounted from volumeMounts
+          - tensorboard --logdir /mnt/output/train/
+        ports:
+          - containerPort: 6006
+            name: tensorboard
 volumeClaimTemplates:
   - metadata:
       name: data

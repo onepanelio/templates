@@ -29,29 +29,45 @@ def main(params):
         for f in files:
             shutil.move(model_dir+'/'+f,'/mnt/data/models')
 
+    if params['from_preprocessing']:
+        train_set = '/tfrecord/train.tfrecord*'
+        eval_set = '/tfrecord/eval.tfrecord*'
+    else:
+        train_set = '/*.tfrecord'
+        eval_set = '/default.tfrecord'
+
     params = create_pipeline('/mnt/data/models/pipeline.config',
         '/mnt/data/models/model.ckpt',
         params['dataset']+'/label_map.pbtxt',
-        params['dataset']+'/*.tfrecord',
-        params['dataset']+'/default.tfrecord',
+        params['dataset']+train_set,
+        params['dataset']+eval_set,
         '/mnt/output/pipeline.config',
         params)
 
     os.chdir('/mnt/output')
-    os.mkdir('eval/')
-    subprocess.call(['python',
-        '/mnt/src/tf/research/object_detection/legacy/train.py',
-        '--train_dir=/mnt/output/',
+    directory = 'eval/'
+    try:
+        os.stat(directory)
+    except:
+        os.mkdir(directory)
+    return_code = subprocess.call(['python',
+        '/mnt/src/tf/research/object_detection/model_main.py',
+        '--alsologtostderr',
+        '--model_dir=/mnt/output/',
         '--pipeline_config_path=/mnt/output/pipeline.config',
-        '--num_clones={}'.format(params['num_clones'])
+        '--num_train_steps={}'.format(params['epochs'])
     ])
-    subprocess.call(['python',
+    if return_code != 0:
+        raise RuntimeError('Training process failed')
+    return_code = subprocess.call(['python',
         '/mnt/src/tf/research/object_detection/export_inference_graph.py',
         '--input-type=image_tensor',
         '--pipeline_config_path=/mnt/output/pipeline.config',
         '--trained_checkpoint_prefix=/mnt/output/model.ckpt-{}'.format(params['epochs']),
         '--output_directory=/mnt/output'
     ])
+    if return_code != 0:
+        raise RuntimeError('Model export process failed')
 
     # generate lable map
     convert_labels_to_csv(params['dataset'])
@@ -60,10 +76,11 @@ def main(params):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train TFOD.')
     parser.add_argument('--dataset', default='/mnt/data/datasets')
-    parser.add_argument('--extras', help='hyperparameters or other configs')
+    parser.add_argument('--extras', default='', help='hyperparameters or other configs')
     parser.add_argument('--sys_finetune_checkpoint', default=' ', help='path to checkpoint')
     parser.add_argument('--model', default='frcnn-res50-coco', help='which model to train')
     parser.add_argument('--num_classes', default=81, type=int, help='number of classes')
+    parser.add_argument('--from_preprocessing', default=False, type=bool)
     args = parser.parse_args()
     # parse parameters
     # sample: epochs=100;num_classes=1
