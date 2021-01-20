@@ -19,6 +19,12 @@ type syncRequest struct {
 	Path   string
 }
 
+type Config struct {
+	Bucket    string
+	URL       string
+	URLPrefix string
+}
+
 // routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
 // 405 is returned if it is neither a GET nor a PUT
 func routeSyncStatus(w http.ResponseWriter, r *http.Request) {
@@ -66,49 +72,53 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 	getSyncStatus(w, r)
 }
 
-func sync(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func sync(config Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	if r.Method != http.MethodPost {
-		log.Printf("[error] sync request failed: only POST method is allowed\n")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
+		if r.Method != http.MethodPost {
+			log.Printf("[error] sync request failed: only POST method is allowed\n")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		decoder := json.NewDecoder(r.Body)
+		var sr syncRequest
+		err := decoder.Decode(&sr)
+		if err != nil {
+			log.Printf("[error] sync request failed: %s\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		go s3.Sync(sr.Action, config.Bucket, sr.Prefix, sr.Path)()
+
+		w.Header().Set("content-type", "application/json")
+		io.WriteString(w, "Sync command sent")
 	}
-
-	decoder := json.NewDecoder(r.Body)
-	var sr syncRequest
-	err := decoder.Decode(&sr)
-	if err != nil {
-		log.Printf("[error] sync request failed: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	go s3.Sync(sr.Action, util.Bucket, sr.Prefix, sr.Path)()
-
-	w.Header().Set("content-type", "application/json")
-	io.WriteString(w, "Sync command sent")
 }
 
-func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
-	relativeEndpoint := r.URL.Path
-	if strings.HasPrefix(r.URL.Path, util.ServerURLPrefix) {
-		relativeEndpoint = r.URL.Path[len(util.ServerURLPrefix):]
-	}
-	log.Printf("Miss [endpoint] %v. Relative: %v", r.URL.Path, relativeEndpoint)
-	log.Printf("RequestURI %v. ServerURLPrefix %v", r.URL.Path, util.ServerURLPrefix)
+func handleUnsupportedEndpoint(config Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		relativeEndpoint := r.URL.Path
+		if strings.HasPrefix(r.URL.Path, config.URLPrefix) {
+			relativeEndpoint = r.URL.Path[len(config.URLPrefix):]
+		}
+		log.Printf("Miss [endpoint] %v. Relative: %v", r.URL.Path, relativeEndpoint)
+		log.Printf("RequestURI %v. ServerURLPrefix %v", r.URL.Path, config.URLPrefix)
 
-	w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+	}
 }
 
 // StartServer starts a server that provides information about the file sync status.
-func StartServer() {
+func StartServer(config Config) {
 	mux := http.NewServeMux()
-	mux.HandleFunc(util.ServerURLPrefix+"/api/status", routeSyncStatus)
-	mux.HandleFunc(util.ServerURLPrefix+"/api/sync", sync)
-	mux.HandleFunc("/", handleUnsupportedEndpoint)
+	mux.HandleFunc(config.URLPrefix+"/api/status", routeSyncStatus)
+	mux.HandleFunc(config.URLPrefix+"/api/sync", sync(config))
+	mux.HandleFunc("/", handleUnsupportedEndpoint(config))
 
-	fmt.Printf("Starting server at %s. Prefix: %v\n", util.ServerURL, util.ServerURLPrefix)
-	err := http.ListenAndServe(util.ServerURL, mux)
+	fmt.Printf("Starting server at %s. Prefix: %v\n", config.URL, config.URLPrefix)
+	err := http.ListenAndServe(config.URL, mux)
 	log.Printf("%v", err)
 }

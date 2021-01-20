@@ -85,9 +85,14 @@ func main() {
 		help("bucket or container name is required", flags)
 	}
 
+	serverConfig := server.Config{
+		Bucket:    util.Bucket,
+		URL:       util.ServerURL,
+		URLPrefix: util.ServerURLPrefix,
+	}
 	// If action is server, we just run the server
 	if util.Action == util.ActionServer {
-		server.StartServer()
+		server.StartServer(serverConfig)
 		return
 	}
 
@@ -106,7 +111,7 @@ func main() {
 		util.Interval = util.Getenv("FS_INTERVAL", "300")
 	}
 
-	go server.StartServer()
+	go server.StartServer(serverConfig)
 
 	fmt.Printf("Sleeping for  %v\n", util.InitialDelay)
 	time.Sleep(util.InitialDelay)
