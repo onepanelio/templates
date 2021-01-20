@@ -28,12 +28,12 @@ type artifactRepositoryS3Provider struct {
 	SecretKeySecret artifactRepositorySecret
 }
 
-// artifactRepositoryProviderConfig defines the structure for artifactRepository config
-type artifactRepositoryProviderConfig struct {
+// ArtifactRepositoryProviderConfig defines the structure for artifactRepository config
+type ArtifactRepositoryProviderConfig struct {
 	S3 *artifactRepositoryS3Provider
 }
 
-func injectS3Credentials(config *artifactRepositoryProviderConfig) error {
+func injectS3Credentials(config *ArtifactRepositoryProviderConfig) error {
 	accessKey, err := ioutil.ReadFile(fmt.Sprintf("%v/%v", ConfigLocation, config.S3.AccessKeySecret.Key))
 	if err != nil {
 		return err
@@ -50,14 +50,14 @@ func injectS3Credentials(config *artifactRepositoryProviderConfig) error {
 	return nil
 }
 
-func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
+func GetArtifactRepositoryConfig() (*ArtifactRepositoryProviderConfig, error) {
 	configFilePath := path.Join(ConfigLocation, "artifactRepository")
 	content, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var config *artifactRepositoryProviderConfig
+	var config *ArtifactRepositoryProviderConfig
 	if err = yaml.Unmarshal(content, &config); err != nil {
 		return nil, err
 	}

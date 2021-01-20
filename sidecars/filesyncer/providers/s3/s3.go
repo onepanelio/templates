@@ -8,15 +8,15 @@ import (
 	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 )
 
-func resolveEnv(cmd *exec.Cmd) {
+func resolveEnv(config *util.ArtifactRepositoryProviderConfig, cmd *exec.Cmd) {
 	accessKey := util.Getenv("AWS_ACCESS_KEY_ID", "")
 	if accessKey == "" {
-		accessKey = util.Config.S3.AccessKey
+		accessKey = config.S3.AccessKey
 	}
 
 	secretKey := util.Getenv("AWS_SECRET_ACCESS_KEY", "")
 	if secretKey == "" {
-		secretKey = util.Config.S3.SecretKey
+		secretKey = config.S3.SecretKey
 	}
 
 	cmd.Env = []string{
@@ -69,7 +69,7 @@ func Sync(action, bucket, prefix, path string) func() {
 				cmd = util.Command("aws", "s3", "sync", "--delete", path, uri)
 			}
 		}
-		resolveEnv(cmd)
+		resolveEnv(config, cmd)
 
 		util.Status.ClearError()
 

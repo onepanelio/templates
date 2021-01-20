@@ -10,7 +10,6 @@ import (
 
 var (
 	ConfigLocation string
-	Config         *artifactRepositoryProviderConfig
 	StatusFilePath string      // where we keep statistics about file uploads/downloads
 	Status         *SyncStatus // keeps track of the status of file uploads/downloads
 	Syncing        = false

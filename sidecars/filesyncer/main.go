@@ -73,8 +73,6 @@ func main() {
 		return
 	}
 
-	util.Config = config
-
 	if bucket == "" {
 		bucket = util.Getenv("FS_BUCKET", "")
 	}
