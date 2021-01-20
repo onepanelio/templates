@@ -41,10 +41,9 @@ func Sync(params SyncParameters) func() {
 		if util.Syncing {
 			util.Mux.Unlock()
 			return
-		} else {
-			util.Syncing = true
-			util.Mux.Unlock()
 		}
+		util.Syncing = true
+		util.Mux.Unlock()
 
 		config, err := util.GetArtifactRepositoryConfig()
 		if err != nil {
