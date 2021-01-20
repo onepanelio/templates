@@ -31,6 +31,7 @@ var (
 const (
 	ActionUpload   = "upload"
 	ActionDownload = "download"
+	ActionServer   = "server"
 )
 
 // Getenv loads the key from the environment, if not found, return defaultValue instead.

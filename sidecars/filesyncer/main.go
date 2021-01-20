@@ -4,12 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/onepanelio/templates/sidecars/filesyncer/providers/az"
-	"github.com/onepanelio/templates/sidecars/filesyncer/providers/gcs"
-	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
-	"github.com/onepanelio/templates/sidecars/filesyncer/util"
-	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
-	"github.com/robfig/cron/v3"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,7 +12,18 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
+	"github.com/robfig/cron/v3"
 )
+
+type SyncRequest struct {
+	Direction string
+	Prefix    string
+	Path      string
+}
 
 func help(error string, flags *flag.FlagSet) {
 	if error != "" {
@@ -29,6 +34,7 @@ func help(error string, flags *flag.FlagSet) {
 		fmt.Print("The commands are:\n\n")
 		fmt.Println("   download\t download files from bucket or container")
 		fmt.Println("   upload\t upload files to bucket or container")
+		fmt.Println("   server\t act as file server sidecar")
 		os.Exit(1)
 	}
 	fmt.Printf("Usage:\n   %s %s [options]\n\n", os.Args[0], util.Action)
@@ -38,13 +44,12 @@ func help(error string, flags *flag.FlagSet) {
 }
 
 func main() {
-	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload {
+	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload && os.Args[1] != util.ActionServer {
 		help("Please indicate if this is an 'upload' or 'download' action", nil)
 	}
 	util.Action = os.Args[1]
 
 	flags := flag.NewFlagSet(util.Action, flag.ExitOnError)
-	flags.StringVar(&util.Provider, "provider", "", "Storage provider: s3 (default), az or gcs")
 	flags.StringVar(&util.Path, "path", "", "Path to local directory")
 	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
 	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
@@ -54,7 +59,6 @@ func main() {
 	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
 	flags.StringVar(&util.ConfigLocation, "config-path", "/etc/onepanel", "The location of config files. A file named artifactRepository is expected to be here.")
 	flags.DurationVar(&util.InitialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
-	flags.BoolVar(&util.JustServer, "just-server", false, "If true, doesn't perform any syncing.")
 	flags.Parse(os.Args[2:])
 
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
@@ -69,11 +73,6 @@ func main() {
 	}
 	util.Status = status
 
-	if util.JustServer {
-		startServer()
-		return
-	}
-
 	config, err := util.GetArtifactRepositoryConfig()
 	if err != nil {
 		help("artifact repository config was not found", flags)
@@ -85,13 +84,6 @@ func main() {
 
 	util.Config = config
 
-	if util.Path == "" {
-		util.Path = util.Getenv("FS_PATH", "")
-	}
-	if util.Path == "" {
-		help("path is required", flags)
-	}
-
 	if util.Bucket == "" {
 		util.Bucket = util.Getenv("FS_BUCKET", "")
 	}
@@ -99,24 +91,22 @@ func main() {
 		if config.S3 != nil {
 			util.Bucket = config.S3.Bucket
 		}
-		if config.GCS != nil {
-			util.Bucket = config.GCS.Bucket
-		}
 	}
 	if util.Bucket == "" {
 		help("bucket or container name is required", flags)
 	}
 
-	if util.Provider == "" {
-		util.Provider = util.Getenv("FS_PROVIDER", "")
+	// If action is server, we just run the server
+	if util.Action == util.ActionServer {
+		startServer()
+		return
 	}
-	if util.Provider == "" {
-		if config.S3 != nil {
-			util.Provider = "s3"
-		}
-		if config.GCS != nil {
-			util.Provider = "gcs"
-		}
+
+	if util.Path == "" {
+		util.Path = util.Getenv("FS_PATH", "")
+	}
+	if util.Path == "" {
+		help("path is required", flags)
 	}
 
 	if util.Prefix == "" {
@@ -135,19 +125,8 @@ func main() {
 
 	c := cron.New()
 	spec := fmt.Sprintf("@every %ss", util.Interval)
-	switch util.Provider {
-	case "az":
-		go az.Sync()
-		c.AddFunc(spec, az.Sync)
-	case "gcs":
-		go gcs.Sync()
-		c.AddFunc(spec, gcs.Sync)
-	case "s3":
-		fallthrough
-	default:
-		go s3.Sync()
-		c.AddFunc(spec, s3.Sync)
-	}
+	go s3.Sync()
+	c.AddFunc(spec, s3.Sync)
 
 	c.Run()
 }
@@ -199,6 +178,32 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 	getSyncStatus(w, r)
 }
 
+func sync(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		log.Printf("[error] sync request failed: only POST method is allowed\n")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var syncRequest SyncRequest
+	err := decoder.Decode(&syncRequest)
+	if err != nil {
+		log.Printf("[error] sync request failed: %s\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	util.Action = syncRequest.Direction
+	util.Prefix = syncRequest.Prefix
+	util.Path = syncRequest.Path
+
+	go s3.Sync()
+
+	w.Header().Set("content-type", "application/json")
+	io.WriteString(w, "Sync command sent")
+}
+
 func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
 	relativeEndpoint := r.URL.Path
 	if strings.HasPrefix(r.URL.Path, util.ServerURLPrefix) {
@@ -214,6 +219,7 @@ func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
 func startServer() {
 	mux := http.NewServeMux()
 	mux.HandleFunc(util.ServerURLPrefix+"/api/status", routeSyncStatus)
+	mux.HandleFunc(util.ServerURLPrefix+"/api/sync", sync)
 	mux.HandleFunc("/", handleUnsupportedEndpoint)
 
 	fmt.Printf("Starting server at %s. Prefix: %v\n", util.ServerURL, util.ServerURLPrefix)
