@@ -2334,8 +2334,8 @@ class MaskRCNN(object):
 
         # Data generators
         train_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True,
-                                         augmentation=augmentation), tf.RaggedTensorSpec())   
-        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), tf.RaggedTensorSpec())
+                                         augmentation=augmentation), output_signature=tf.RaggedTensorSpec())   
+        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_signature=tf.RaggedTensorSpec())
 
         # Create log_dir if it does not exist
         if not os.path.exists(self.log_dir):
