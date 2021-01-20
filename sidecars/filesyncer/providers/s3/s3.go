@@ -25,7 +25,7 @@ func resolveEnv(config *util.ArtifactRepositoryProviderConfig, cmd *exec.Cmd) {
 	}
 }
 
-func Sync(action, bucket, prefix, path string) func() {
+func Sync(action, prefix, path string) func() {
 	return func() {
 		// Make sure we don't run more than once sync at a time.
 		util.Mux.Lock()
@@ -52,7 +52,7 @@ func Sync(action, bucket, prefix, path string) func() {
 		}
 
 		var cmd *exec.Cmd
-		uri := fmt.Sprintf("s3://%v/%v", bucket, prefix)
+		uri := fmt.Sprintf("s3://%v/%v", config.S3.Bucket, prefix)
 		if action == util.ActionDownload {
 			util.Status.IsDownloading = true
 			if nonS3 {

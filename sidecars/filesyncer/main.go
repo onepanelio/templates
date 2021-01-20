@@ -73,20 +73,7 @@ func main() {
 		return
 	}
 
-	if bucket == "" {
-		bucket = util.Getenv("FS_BUCKET", "")
-	}
-	if bucket == "" {
-		if config.S3 != nil {
-			bucket = config.S3.Bucket
-		}
-	}
-	if bucket == "" {
-		help("bucket or container name is required", action, flags)
-	}
-
 	serverConfig := server.Config{
-		Bucket:    bucket,
 		URL:       serverURL,
 		URLPrefix: serverURLPrefix,
 	}
@@ -119,8 +106,8 @@ func main() {
 
 	c := cron.New()
 	spec := fmt.Sprintf("@every %ss", interval)
-	go s3.Sync(action, bucket, prefix, filepath)()
-	c.AddFunc(spec, s3.Sync(action, bucket, prefix, filepath))
+	go s3.Sync(action, prefix, filepath)()
+	c.AddFunc(spec, s3.Sync(action, prefix, filepath))
 
 	c.Run()
 }
