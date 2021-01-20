@@ -1,29 +1,18 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
+	"github.com/onepanelio/templates/sidecars/filesyncer/server"
 	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
 	"github.com/robfig/cron/v3"
 )
-
-type SyncRequest struct {
-	Direction string
-	Prefix    string
-	Path      string
-}
 
 func help(error string, flags *flag.FlagSet) {
 	if error != "" {
@@ -98,7 +87,7 @@ func main() {
 
 	// If action is server, we just run the server
 	if util.Action == util.ActionServer {
-		startServer()
+		server.StartServer()
 		return
 	}
 
@@ -117,7 +106,7 @@ func main() {
 		util.Interval = util.Getenv("FS_INTERVAL", "300")
 	}
 
-	go startServer()
+	go server.StartServer()
 
 	fmt.Printf("Sleeping for  %v\n", util.InitialDelay)
 	time.Sleep(util.InitialDelay)
@@ -129,100 +118,4 @@ func main() {
 	c.AddFunc(spec, s3.Sync)
 
 	c.Run()
-}
-
-// routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
-// 405 is returned if it is neither a GET nor a PUT
-func routeSyncStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	if r.Method == "" || r.Method == "GET" {
-		getSyncStatus(w, r)
-	} else if r.Method == "PUT" {
-		putSyncStatus(w, r)
-	} else {
-		w.WriteHeader(405) // not allowed
-	}
-}
-
-// getSyncStatus returns the util.Status in JSON form
-func getSyncStatus(w http.ResponseWriter, r *http.Request) {
-	data, err := json.Marshal(util.Status)
-	if err != nil {
-		log.Printf("[error] marshaling util.Status: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("content-type", "application/json")
-	if _, err := io.WriteString(w, string(data)); err != nil {
-		log.Printf("[error] %s\n", err)
-	}
-}
-
-// putSyncStatus updates the util.Status with the input values
-// all values are overridden
-func putSyncStatus(w http.ResponseWriter, r *http.Request) {
-	content, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("[error] reading sync status put body: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.Unmarshal(content, util.Status); err != nil {
-		log.Printf("[error] unmarshaling sync status body: %s: %s\n", content, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	getSyncStatus(w, r)
-}
-
-func sync(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		log.Printf("[error] sync request failed: only POST method is allowed\n")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	var syncRequest SyncRequest
-	err := decoder.Decode(&syncRequest)
-	if err != nil {
-		log.Printf("[error] sync request failed: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	util.Action = syncRequest.Direction
-	util.Prefix = syncRequest.Prefix
-	util.Path = syncRequest.Path
-
-	go s3.Sync()
-
-	w.Header().Set("content-type", "application/json")
-	io.WriteString(w, "Sync command sent")
-}
-
-func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
-	relativeEndpoint := r.URL.Path
-	if strings.HasPrefix(r.URL.Path, util.ServerURLPrefix) {
-		relativeEndpoint = r.URL.Path[len(util.ServerURLPrefix):]
-	}
-	log.Printf("Miss [endpoint] %v. Relative: %v", r.URL.Path, relativeEndpoint)
-	log.Printf("RequestURI %v. ServerURLPrefix %v", r.URL.Path, util.ServerURLPrefix)
-
-	w.WriteHeader(http.StatusNotFound)
-}
-
-// startServer starts a server that provides information about the file sync status.
-func startServer() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(util.ServerURLPrefix+"/api/status", routeSyncStatus)
-	mux.HandleFunc(util.ServerURLPrefix+"/api/sync", sync)
-	mux.HandleFunc("/", handleUnsupportedEndpoint)
-
-	fmt.Printf("Starting server at %s. Prefix: %v\n", util.ServerURL, util.ServerURLPrefix)
-	err := http.ListenAndServe(util.ServerURL, mux)
-	log.Printf("%v", err)
 }
