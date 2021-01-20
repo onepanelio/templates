@@ -24,12 +24,12 @@ type syncRequest struct {
 func routeSyncStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	if r.Method == "" || r.Method == "GET" {
+	if r.Method == http.MethodGet {
 		getSyncStatus(w, r)
-	} else if r.Method == "PUT" {
+	} else if r.Method == http.MethodPut {
 		putSyncStatus(w, r)
 	} else {
-		w.WriteHeader(405) // not allowed
+		w.WriteHeader(http.StatusMethodNotAllowed) // not allowed
 	}
 }
 
@@ -67,6 +67,8 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func sync(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	if r.Method != http.MethodPost {
 		log.Printf("[error] sync request failed: only POST method is allowed\n")
 		w.WriteHeader(http.StatusMethodNotAllowed)
