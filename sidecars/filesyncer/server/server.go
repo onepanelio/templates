@@ -21,7 +21,6 @@ type syncRequest struct {
 
 // Config is used for server configuration
 type Config struct {
-	Bucket    string
 	URL       string
 	URLPrefix string
 }
