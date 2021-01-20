@@ -1699,13 +1699,14 @@ class DataGenerator():
         self.random_rois = random_rois
         self.batch_size = self.config.BATCH_SIZE
         self.detection_targets = detection_targets
+        self.idx = -1
 
     def __len__(self):
         return int(np.ceil(len(self.image_ids) / float(self.batch_size)))
 
     def __getitem__(self, idx):
         b = 0
-        image_index = -1
+        image_index = idx * self.batch_size - 1
         while b < self.batch_size:
             # Increment index to pick next image. Shuffle if at the start of an epoch.
             image_index = (image_index + 1) % len(self.image_ids)
@@ -1811,8 +1812,12 @@ class DataGenerator():
     
     def __iter__(self):
         """Create a generator that iterate over the Sequence."""
-        for item in (self[i] for i in range(len(self))):
-            yield item
+        return self
+
+    def __next__(self):
+        self.idx += 1
+        self[self.idx]
+        
 
 
 ############################################################
