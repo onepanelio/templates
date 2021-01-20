@@ -1814,6 +1814,9 @@ class DataGenerator():
         """Create a generator that iterate over the Sequence."""
         return self
 
+    def __call__(self):
+        return self
+
     def __next__(self):
         self.idx += 1
         return self[self.idx]
