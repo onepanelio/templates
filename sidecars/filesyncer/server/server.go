@@ -13,12 +13,6 @@ import (
 	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 )
 
-type syncRequest struct {
-	Action string
-	Prefix string
-	Path   string
-}
-
 // Config is used for server configuration
 type Config struct {
 	URL       string
@@ -82,15 +76,15 @@ func sync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var sr syncRequest
-	err := decoder.Decode(&sr)
+	var params s3.SyncParameters
+	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("[error] sync request failed: %s\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	go s3.Sync(sr.Action, sr.Prefix, sr.Path)()
+	go s3.Sync(params)()
 
 	w.Header().Set("content-type", "application/json")
 	io.WriteString(w, "Sync command sent")

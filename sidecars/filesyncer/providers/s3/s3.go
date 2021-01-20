@@ -8,6 +8,14 @@ import (
 	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 )
 
+// SyncParameters are all allowed parameters for sync
+type SyncParameters struct {
+	Action string
+	Prefix string
+	Path   string
+	Delete bool
+}
+
 func resolveEnv(config *util.ArtifactRepositoryProviderConfig, cmd *exec.Cmd) {
 	accessKey := util.Getenv("AWS_ACCESS_KEY_ID", "")
 	if accessKey == "" {
@@ -25,7 +33,8 @@ func resolveEnv(config *util.ArtifactRepositoryProviderConfig, cmd *exec.Cmd) {
 	}
 }
 
-func Sync(action, prefix, path string) func() {
+// Sync syncs up/down files to/from object storage
+func Sync(params SyncParameters) func() {
 	return func() {
 		// Make sure we don't run more than once sync at a time.
 		util.Mux.Lock()
@@ -52,22 +61,28 @@ func Sync(action, prefix, path string) func() {
 		}
 
 		var cmd *exec.Cmd
-		uri := fmt.Sprintf("s3://%v/%v", config.S3.Bucket, prefix)
-		if action == util.ActionDownload {
+		uri := fmt.Sprintf("s3://%v/%v", config.S3.Bucket, params.Prefix)
+		if params.Action == util.ActionDownload {
 			util.Status.IsDownloading = true
+			args := []string{"s3", "sync", uri, params.Path}
 			if nonS3 {
-				cmd = util.Command("aws", "s3", "sync", "--endpoint-url", nonS3Endpoint, "--delete", uri, path)
-			} else {
-				cmd = util.Command("aws", "s3", "sync", "--delete", uri, path)
+				args = append(args, "--endpoint-url", nonS3Endpoint)
 			}
+			if params.Delete {
+				args = append(args, "--delete")
+			}
+			cmd = util.Command("aws", args...)
 		}
-		if action == util.ActionUpload {
+		if params.Action == util.ActionUpload {
 			util.Status.IsUploading = true
+			args := []string{"s3", "sync", params.Path, uri}
 			if nonS3 {
-				cmd = util.Command("aws", "s3", "--endpoint-url", nonS3Endpoint, "sync", "--delete", path, uri)
-			} else {
-				cmd = util.Command("aws", "s3", "sync", "--delete", path, uri)
+				args = append(args, "--endpoint-url", nonS3Endpoint)
 			}
+			if params.Delete {
+				args = append(args, "--delete")
+			}
+			cmd = util.Command("aws", args...)
 		}
 		resolveEnv(config, cmd)
 
@@ -83,10 +98,10 @@ func Sync(action, prefix, path string) func() {
 			return
 		}
 
-		if action == util.ActionDownload {
+		if params.Action == util.ActionDownload {
 			util.Status.MarkLastDownload()
 		}
-		if action == util.ActionUpload {
+		if params.Action == util.ActionUpload {
 			util.Status.MarkLastUpload()
 		}
 		if err := util.SaveSyncStatus(); err != nil {
