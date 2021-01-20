@@ -25,74 +25,76 @@ func resolveEnv(cmd *exec.Cmd) {
 	}
 }
 
-func Sync() {
-	// Make sure we don't run more than once sync at a time.
-	util.Mux.Lock()
-	if util.Syncing {
-		util.Mux.Unlock()
-		return
-	} else {
-		util.Syncing = true
-		util.Mux.Unlock()
-	}
-
-	config, err := util.GetArtifactRepositoryConfig()
-	if err != nil {
-		log.Printf("[error] unable to get artifact repository config")
-		return
-	}
-
-	nonS3 := config.S3.Endpoint != "s3.amazonaws.com"
-	nonS3Endpoint := config.S3.Endpoint
-	if nonS3 && config.S3.Insecure {
-		nonS3Endpoint = "http://" + nonS3Endpoint
-	} else {
-		nonS3Endpoint = "https://" + nonS3Endpoint
-	}
-
-	var cmd *exec.Cmd
-	uri := fmt.Sprintf("s3://%v/%v", util.Bucket, util.Prefix)
-	if util.Action == util.ActionDownload {
-		util.Status.IsDownloading = true
-		if nonS3 {
-			cmd = util.Command("aws", "s3", "sync", "--endpoint-url", nonS3Endpoint, "--delete", uri, util.Path)
+func Sync(action, bucket, prefix, path string) func() {
+	return func() {
+		// Make sure we don't run more than once sync at a time.
+		util.Mux.Lock()
+		if util.Syncing {
+			util.Mux.Unlock()
+			return
 		} else {
-			cmd = util.Command("aws", "s3", "sync", "--delete", uri, util.Path)
+			util.Syncing = true
+			util.Mux.Unlock()
 		}
-	}
-	if util.Action == util.ActionUpload {
-		util.Status.IsUploading = true
-		if nonS3 {
-			cmd = util.Command("aws", "s3", "--endpoint-url", nonS3Endpoint, "sync", "--delete", util.Path, uri)
+
+		config, err := util.GetArtifactRepositoryConfig()
+		if err != nil {
+			log.Printf("[error] unable to get artifact repository config")
+			return
+		}
+
+		nonS3 := config.S3.Endpoint != "s3.amazonaws.com"
+		nonS3Endpoint := config.S3.Endpoint
+		if nonS3 && config.S3.Insecure {
+			nonS3Endpoint = "http://" + nonS3Endpoint
 		} else {
-			cmd = util.Command("aws", "s3", "sync", "--delete", util.Path, uri)
+			nonS3Endpoint = "https://" + nonS3Endpoint
 		}
-	}
-	resolveEnv(cmd)
 
-	util.Status.ClearError()
+		var cmd *exec.Cmd
+		uri := fmt.Sprintf("s3://%v/%v", bucket, prefix)
+		if action == util.ActionDownload {
+			util.Status.IsDownloading = true
+			if nonS3 {
+				cmd = util.Command("aws", "s3", "sync", "--endpoint-url", nonS3Endpoint, "--delete", uri, path)
+			} else {
+				cmd = util.Command("aws", "s3", "sync", "--delete", uri, path)
+			}
+		}
+		if action == util.ActionUpload {
+			util.Status.IsUploading = true
+			if nonS3 {
+				cmd = util.Command("aws", "s3", "--endpoint-url", nonS3Endpoint, "sync", "--delete", path, uri)
+			} else {
+				cmd = util.Command("aws", "s3", "sync", "--delete", path, uri)
+			}
+		}
+		resolveEnv(cmd)
 
-	log.Printf("Running cmd %v\n", cmd.String())
+		util.Status.ClearError()
 
-	if err := util.RunCommand(cmd); err != nil {
-		util.Status.ReportError(err)
+		log.Printf("Running cmd %v\n", cmd.String())
+
+		if err := util.RunCommand(cmd); err != nil {
+			util.Status.ReportError(err)
+			util.Mux.Lock()
+			util.Syncing = false
+			util.Mux.Unlock()
+			return
+		}
+
+		if action == util.ActionDownload {
+			util.Status.MarkLastDownload()
+		}
+		if action == util.ActionUpload {
+			util.Status.MarkLastUpload()
+		}
+		if err := util.SaveSyncStatus(); err != nil {
+			fmt.Printf("[error] save sync status: Message %v\n", err)
+		}
+
 		util.Mux.Lock()
 		util.Syncing = false
 		util.Mux.Unlock()
-		return
 	}
-
-	if util.Action == util.ActionDownload {
-		util.Status.MarkLastDownload()
-	}
-	if util.Action == util.ActionUpload {
-		util.Status.MarkLastUpload()
-	}
-	if err := util.SaveSyncStatus(); err != nil {
-		fmt.Printf("[error] save sync status: Message %v\n", err)
-	}
-
-	util.Mux.Lock()
-	util.Syncing = false
-	util.Mux.Unlock()
 }

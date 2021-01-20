@@ -114,8 +114,8 @@ func main() {
 
 	c := cron.New()
 	spec := fmt.Sprintf("@every %ss", util.Interval)
-	go s3.Sync()
-	c.AddFunc(spec, s3.Sync)
+	go s3.Sync(util.Action, util.Bucket, util.Prefix, util.Path)()
+	c.AddFunc(spec, s3.Sync(util.Action, util.Bucket, util.Prefix, util.Path))
 
 	c.Run()
 }

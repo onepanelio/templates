@@ -84,11 +84,7 @@ func sync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.Action = sr.Action
-	util.Prefix = sr.Prefix
-	util.Path = sr.Path
-
-	go s3.Sync()
+	go s3.Sync(sr.Action, util.Bucket, sr.Prefix, sr.Path)()
 
 	w.Header().Set("content-type", "application/json")
 	io.WriteString(w, "Sync command sent")
