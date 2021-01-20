@@ -14,9 +14,9 @@ import (
 )
 
 type syncRequest struct {
-	Direction string
-	Prefix    string
-	Path      string
+	Action string
+	Prefix string
+	Path   string
 }
 
 // routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
@@ -82,7 +82,7 @@ func sync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.Action = sr.Direction
+	util.Action = sr.Action
 	util.Prefix = sr.Prefix
 	util.Path = sr.Path
 

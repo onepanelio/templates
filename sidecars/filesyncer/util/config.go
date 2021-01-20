@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+
 	"sigs.k8s.io/yaml"
 )
 
@@ -27,20 +28,9 @@ type artifactRepositoryS3Provider struct {
 	SecretKeySecret artifactRepositorySecret
 }
 
-// artifactRepositoryGCSProvider defines the structure for gcs config
-type artifactRepositoryGCSProvider struct {
-	KeyFormat               string
-	Bucket                  string
-	Endpoint                string
-	Insecure                bool
-	ServiceAccountKeyPath   string
-	ServiceAccountKeySecret artifactRepositorySecret
-}
-
 // artifactRepositoryProviderConfig defines the structure for artifactRepository config
 type artifactRepositoryProviderConfig struct {
-	S3  *artifactRepositoryS3Provider
-	GCS *artifactRepositoryGCSProvider
+	S3 *artifactRepositoryS3Provider
 }
 
 func injectS3Credentials(config *artifactRepositoryProviderConfig) error {
@@ -77,8 +67,6 @@ func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
 
 	if config.S3 != nil {
 		injectS3Credentials(config)
-	} else if config.GCS != nil {
-		config.GCS.ServiceAccountKeyPath = fmt.Sprintf("%v/%v", ConfigLocation, config.GCS.ServiceAccountKeySecret.Key)
 	} else {
 		return nil, errors.New("invalid configuration")
 	}
