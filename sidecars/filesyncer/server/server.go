@@ -19,6 +19,7 @@ type syncRequest struct {
 	Path   string
 }
 
+// Config is used for server configuration
 type Config struct {
 	Bucket    string
 	URL       string

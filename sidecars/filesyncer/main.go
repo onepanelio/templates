@@ -14,7 +14,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func help(error string, flags *flag.FlagSet) {
+func help(error, action string, flags *flag.FlagSet) {
 	if error != "" {
 		fmt.Printf("Error: %v\n\n", error)
 	}
@@ -26,28 +26,30 @@ func help(error string, flags *flag.FlagSet) {
 		fmt.Println("   server\t act as file server sidecar")
 		os.Exit(1)
 	}
-	fmt.Printf("Usage:\n   %s %s [options]\n\n", os.Args[0], util.Action)
+	fmt.Printf("Usage:\n   %s %s [options]\n\n", os.Args[0], action)
 	fmt.Println("The options are:")
 	flags.PrintDefaults()
 	os.Exit(1)
 }
 
 func main() {
+	action := os.Args[1]
 	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload && os.Args[1] != util.ActionServer {
-		help("Please indicate if this is an 'upload' or 'download' action", nil)
+		help("Please indicate if this is an 'upload' or 'download' action", action, nil)
 	}
-	util.Action = os.Args[1]
 
-	flags := flag.NewFlagSet(util.Action, flag.ExitOnError)
-	flags.StringVar(&util.Path, "path", "", "Path to local directory")
-	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
-	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
-	flags.StringVar(&util.Interval, "interval", "", "Sync interval in seconds")
+	var filepath, bucket, prefix, interval, serverURL, serverURLPrefix string
+	var initialDelay time.Duration
+	flags := flag.NewFlagSet(action, flag.ExitOnError)
+	flags.StringVar(&filepath, "path", "", "Path to local directory")
+	flags.StringVar(&bucket, "bucket", "", "Bucket or container name")
+	flags.StringVar(&prefix, "prefix", "", "Key prefix in bucket or container")
+	flags.StringVar(&interval, "interval", "", "Sync interval in seconds")
 	flags.StringVar(&util.StatusFilePath, "status-path", path.Join(".status", "status.json"), "Location of file that keeps track of statistics for file uploads/downloads")
-	flags.StringVar(&util.ServerURL, "host", "localhost:8888", "URL that you want the server to run")
-	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
+	flags.StringVar(&serverURL, "host", "localhost:8888", "URL that you want the server to run")
+	flags.StringVar(&serverURLPrefix, "server-prefix", "", "Prefix for the server api urls")
 	flags.StringVar(&util.ConfigLocation, "config-path", "/etc/onepanel", "The location of config files. A file named artifactRepository is expected to be here.")
-	flags.DurationVar(&util.InitialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
+	flags.DurationVar(&initialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
 	flags.Parse(os.Args[2:])
 
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
@@ -64,7 +66,7 @@ func main() {
 
 	config, err := util.GetArtifactRepositoryConfig()
 	if err != nil {
-		help("artifact repository config was not found", flags)
+		help("artifact repository config was not found", action, flags)
 	}
 	if config == nil {
 		fmt.Println("Unknown error loading ArtifactRepositoryConfig")
@@ -73,54 +75,54 @@ func main() {
 
 	util.Config = config
 
-	if util.Bucket == "" {
-		util.Bucket = util.Getenv("FS_BUCKET", "")
+	if bucket == "" {
+		bucket = util.Getenv("FS_BUCKET", "")
 	}
-	if util.Bucket == "" {
+	if bucket == "" {
 		if config.S3 != nil {
-			util.Bucket = config.S3.Bucket
+			bucket = config.S3.Bucket
 		}
 	}
-	if util.Bucket == "" {
-		help("bucket or container name is required", flags)
+	if bucket == "" {
+		help("bucket or container name is required", action, flags)
 	}
 
 	serverConfig := server.Config{
-		Bucket:    util.Bucket,
-		URL:       util.ServerURL,
-		URLPrefix: util.ServerURLPrefix,
+		Bucket:    bucket,
+		URL:       serverURL,
+		URLPrefix: serverURLPrefix,
 	}
 	// If action is server, we just run the server
-	if util.Action == util.ActionServer {
+	if action == util.ActionServer {
 		server.StartServer(serverConfig)
 		return
 	}
 
-	if util.Path == "" {
-		util.Path = util.Getenv("FS_PATH", "")
+	if filepath == "" {
+		filepath = util.Getenv("FS_PATH", "")
 	}
-	if util.Path == "" {
-		help("path is required", flags)
-	}
-
-	if util.Prefix == "" {
-		util.Prefix = util.Getenv("FS_PREFIX", "")
+	if filepath == "" {
+		help("path is required", action, flags)
 	}
 
-	if util.Interval == "" {
-		util.Interval = util.Getenv("FS_INTERVAL", "300")
+	if prefix == "" {
+		prefix = util.Getenv("FS_PREFIX", "")
+	}
+
+	if interval == "" {
+		interval = util.Getenv("FS_INTERVAL", "300")
 	}
 
 	go server.StartServer(serverConfig)
 
-	fmt.Printf("Sleeping for  %v\n", util.InitialDelay)
-	time.Sleep(util.InitialDelay)
+	fmt.Printf("Sleeping for  %v\n", initialDelay)
+	time.Sleep(initialDelay)
 	fmt.Printf("Done sleeping.\n")
 
 	c := cron.New()
-	spec := fmt.Sprintf("@every %ss", util.Interval)
-	go s3.Sync(util.Action, util.Bucket, util.Prefix, util.Path)()
-	c.AddFunc(spec, s3.Sync(util.Action, util.Bucket, util.Prefix, util.Path))
+	spec := fmt.Sprintf("@every %ss", interval)
+	go s3.Sync(action, bucket, prefix, filepath)()
+	c.AddFunc(spec, s3.Sync(action, bucket, prefix, filepath))
 
 	c.Run()
 }
