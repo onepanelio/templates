@@ -62,28 +62,22 @@ func Sync(params SyncParameters) func() {
 
 		var cmd *exec.Cmd
 		uri := fmt.Sprintf("s3://%v/%v", config.S3.Bucket, params.Prefix)
+		args := []string{"s3", "sync"}
 		if params.Action == util.ActionDownload {
 			util.Status.IsDownloading = true
-			args := []string{"s3", "sync", uri, params.Path}
-			if nonS3 {
-				args = append(args, "--endpoint-url", nonS3Endpoint)
-			}
-			if params.Delete {
-				args = append(args, "--delete")
-			}
-			cmd = util.Command("aws", args...)
+			args = append(args, uri, params.Path)
 		}
 		if params.Action == util.ActionUpload {
 			util.Status.IsUploading = true
-			args := []string{"s3", "sync", params.Path, uri}
-			if nonS3 {
-				args = append(args, "--endpoint-url", nonS3Endpoint)
-			}
-			if params.Delete {
-				args = append(args, "--delete")
-			}
-			cmd = util.Command("aws", args...)
+			args = append(args, params.Path, uri)
 		}
+		if nonS3 {
+			args = append(args, "--endpoint-url", nonS3Endpoint)
+		}
+		if params.Delete {
+			args = append(args, "--delete")
+		}
+		cmd = util.Command("aws", args...)
 		resolveEnv(config, cmd)
 
 		util.Status.ClearError()
