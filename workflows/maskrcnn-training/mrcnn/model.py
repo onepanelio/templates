@@ -1816,7 +1816,7 @@ class DataGenerator():
 
     def __next__(self):
         self.idx += 1
-        self[self.idx]
+        return self[self.idx]
         
 
 
