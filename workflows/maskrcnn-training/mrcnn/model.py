@@ -1641,7 +1641,7 @@ def generate_random_rois(image_shape, count, gt_class_ids, gt_boxes):
     return rois
 
 
-class DataGenerator(KU.Sequence):
+class DataGenerator():
     """An iterable that returns images and corresponding target class ids,
         bounding box deltas, and masks. It inherits from keras.utils.Sequence to avoid data redundancy
         when multiprocessing=True.
@@ -1808,6 +1808,11 @@ class DataGenerator(KU.Sequence):
                     [batch_mrcnn_class_ids, batch_mrcnn_bbox, batch_mrcnn_mask])
 
         return inputs, outputs
+    
+    def __iter__(self):
+        """Create a generator that iterate over the Sequence."""
+        for item in (self[i] for i in range(len(self))):
+            yield item
 
 
 ############################################################
@@ -2320,9 +2325,9 @@ class MaskRCNN(object):
             layers = layer_regex[layers]
 
         # Data generators
-        train_generator = DataGenerator(train_dataset, self.config, shuffle=True,
-                                         augmentation=augmentation)
-        val_generator = DataGenerator(val_dataset, self.config, shuffle=True)
+        train_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True,
+                                         augmentation=augmentation))
+        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True))
 
         # Create log_dir if it does not exist
         if not os.path.exists(self.log_dir):
@@ -2364,7 +2369,7 @@ class MaskRCNN(object):
             validation_steps=self.config.VALIDATION_STEPS,
             max_queue_size=100,
             workers=workers,
-            use_multiprocessing=False,
+            use_multiprocessing=True,
         )
         self.epoch = max(self.epoch, epochs)
 

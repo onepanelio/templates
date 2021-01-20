@@ -162,11 +162,11 @@ class OnepanelDataset(utils.Dataset):
         if dataType == "minival" or dataType == "valminusminival":
             imgDir = "{}/{}{}".format(dataDir, "val", dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, "val", dataYear)
-            imgURL = "http://images.Onepaneldataset.org/zips/{}{}.zip".format("val", dataYear)
+            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format("val", dataYear)
         else:
             imgDir = "{}/{}{}".format(dataDir, dataType, dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, dataType, dataYear)
-            imgURL = "http://images.Onepaneldataset.org/zips/{}{}.zip".format(dataType, dataYear)
+            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(dataType, dataYear)
         # print("Image paths:"); print(imgDir); print(imgZipFile); print(imgURL)
 
         # Create main folder if it doesn't exist yet
@@ -201,7 +201,7 @@ class OnepanelDataset(utils.Dataset):
         else:
             annZipFile = "{}/annotations_trainval{}.zip".format(dataDir, dataYear)
             annFile = "{}/instances_{}{}.json".format(annDir, dataType, dataYear)
-            annURL = "http://images.Onepaneldataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
+            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
             unZipDir = dataDir
         # print("Annotations paths:"); print(annDir); print(annFile); print(annZipFile); print(annURL)
 
@@ -276,7 +276,7 @@ class OnepanelDataset(utils.Dataset):
         """Return a link to the image in the COCO Website."""
         info = self.image_info[image_id]
         if info["source"] == "coco":
-            return "http://Onepaneldataset.org/#explore?id={}".format(info["id"])
+            return "http://cocodataset.org/#explore?id={}".format(info["id"])
         else:
             super(OnepanelDataset, self).image_reference(image_id)
 
@@ -316,7 +316,7 @@ class OnepanelDataset(utils.Dataset):
 ############################################################
 
 def build_coco_results(dataset, image_ids, rois, class_ids, scores, masks):
-    """Arrange resutls to match COCO specs in http://Onepaneldataset.org/#format
+    """Arrange resutls to match COCO specs in http://cocodataset.org/#format
     """
     # If no results, return an empty list
     if rois is None:
