@@ -227,6 +227,8 @@ class Config(object):
         # See compose_image_meta() for details
         self.IMAGE_META_SIZE = 1 + 3 + 3 + 4 + 1 + self.NUM_CLASSES
 
+        self.USE_RPN_ROIS = True
+
     def to_dict(self):
         return {a: getattr(self, a)
                 for a in sorted(dir(self))

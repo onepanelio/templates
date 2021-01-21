@@ -6,6 +6,8 @@ Copyright (c) 2017 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 """
+import warnings
+warnings.filterwarnings("ignore")
 
 import os
 import datetime
@@ -18,7 +20,6 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.backend as K
 import tensorflow.keras.layers as KL
-import tensorflow.keras.utils as KU
 from tensorflow.python.eager import context
 import tensorflow.keras.models as KM
 
@@ -1756,18 +1757,6 @@ class DataGenerator():
                 batch_gt_masks = np.zeros(
                     (self.batch_size, gt_masks.shape[0], gt_masks.shape[1],
                      self.config.MAX_GT_INSTANCES), dtype=gt_masks.dtype)
-                if self.random_rois:
-                    batch_rpn_rois = np.zeros(
-                        (self.batch_size, rpn_rois.shape[0], 4), dtype=rpn_rois.dtype)
-                    if self.detection_targets:
-                        batch_rois = np.zeros(
-                            (self.batch_size,) + rois.shape, dtype=rois.dtype)
-                        batch_mrcnn_class_ids = np.zeros(
-                            (self.batch_size,) + mrcnn_class_ids.shape, dtype=mrcnn_class_ids.dtype)
-                        batch_mrcnn_bbox = np.zeros(
-                            (self.batch_size,) + mrcnn_bbox.shape, dtype=mrcnn_bbox.dtype)
-                        batch_mrcnn_mask = np.zeros(
-                            (self.batch_size,) + mrcnn_mask.shape, dtype=mrcnn_mask.dtype)
 
             # If more instances than fits in the array, sub-sample from them.
             if gt_boxes.shape[0] > self.config.MAX_GT_INSTANCES:
@@ -1785,30 +1774,12 @@ class DataGenerator():
             batch_gt_class_ids[b, :gt_class_ids.shape[0]] = gt_class_ids
             batch_gt_boxes[b, :gt_boxes.shape[0]] = gt_boxes
             batch_gt_masks[b, :, :, :gt_masks.shape[-1]] = gt_masks
-            if self.random_rois:
-                batch_rpn_rois[b] = rpn_rois
-                if self.detection_targets:
-                    batch_rois[b] = rois
-                    batch_mrcnn_class_ids[b] = mrcnn_class_ids
-                    batch_mrcnn_bbox[b] = mrcnn_bbox
-                    batch_mrcnn_mask[b] = mrcnn_mask
             b += 1
 
-        inputs = [batch_images, batch_image_meta, batch_rpn_match, batch_rpn_bbox,
-                  batch_gt_class_ids, batch_gt_boxes, batch_gt_masks]
-        outputs = []
+        inputs = (batch_images, batch_image_meta, batch_rpn_match, batch_rpn_bbox,
+                  batch_gt_class_ids, batch_gt_boxes, batch_gt_masks.astype(float))
 
-        if self.random_rois:
-            inputs.extend([batch_rpn_rois])
-            if self.detection_targets:
-                inputs.extend([batch_rois])
-                # Keras requires that output and targets have the same number of dimensions
-                batch_mrcnn_class_ids = np.expand_dims(
-                    batch_mrcnn_class_ids, -1)
-                outputs.extend(
-                    [batch_mrcnn_class_ids, batch_mrcnn_bbox, batch_mrcnn_mask])
-
-        return inputs, outputs
+        return (inputs, 1.1)
     
     def __iter__(self):
         """Create a generator that iterate over the Sequence."""
@@ -1890,11 +1861,11 @@ class MaskRCNN(object):
                 input_gt_masks = KL.Input(
                     shape=[config.MINI_MASK_SHAPE[0],
                            config.MINI_MASK_SHAPE[1], None],
-                    name="input_gt_masks", dtype=bool)
+                    name="input_gt_masks", dtype=tf.float32)
             else:
                 input_gt_masks = KL.Input(
                     shape=[config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1], None],
-                    name="input_gt_masks", dtype=bool)
+                    name="input_gt_masks", dtype=tf.float32)
         elif mode == "inference":
             # Anchors in normalized coordinates
             input_anchors = KL.Input(shape=[None, 4], name="input_anchors")
@@ -2273,8 +2244,9 @@ class MaskRCNN(object):
                 print('Re-starting from epoch %d' % self.epoch)
 
         # Directory for training logs
-        self.log_dir = os.path.join(self.model_dir, "{}{:%Y%m%dT%H%M}".format(
-            self.config.NAME.lower(), now))
+        # self.log_dir = os.path.join(self.model_dir, "{}{:%Y%m%dT%H%M}".format(
+        #     self.config.NAME.lower(), now))
+        self.log_dir = self.model_dir
 
         # Path to save after each epoch. Include placeholders that get filled by Keras.
         self.checkpoint_path = os.path.join(self.log_dir, "mask_rcnn_{}_*epoch*.h5".format(
@@ -2332,18 +2304,29 @@ class MaskRCNN(object):
         if layers in layer_regex.keys():
             layers = layer_regex[layers]
 
+        data_spec = ((
+            tf.TensorSpec(shape=(None, None, None, 3)), 
+            tf.TensorSpec(shape=(None, None), dtype=tf.float64), 
+            tf.TensorSpec(shape=(None, None, None), dtype=tf.int32), 
+            tf.TensorSpec(shape=(None, None, None), dtype=tf.float64), 
+            tf.TensorSpec(shape=(None, None), dtype=tf.int32), 
+            tf.TensorSpec(shape=(None, None, None), dtype=tf.int32),
+            tf.TensorSpec(shape=(None, None, None, None), dtype=tf.float32)
+        ), tf.TensorSpec(shape=()))
+
         # Data generators
         train_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True,
-                                         augmentation=augmentation), output_signature=tf.RaggedTensorSpec(ragged_rank=2))   
-        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_signature=tf.RaggedTensorSpec(ragged_rank=2))
+                                         augmentation=augmentation), output_signature=data_spec)   
+        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_signature=data_spec)
 
         # Create log_dir if it does not exist
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
+        tensorboard_logs_dir = os.path.join(self.log_dir, "logs")
+        if not os.path.exists(tensorboard_logs_dir):
+            os.makedirs(tensorboard_logs_dir)
 
         # Callbacks
         callbacks = [
-            keras.callbacks.TensorBoard(log_dir=self.log_dir, profile_batch=0,
+            keras.callbacks.TensorBoard(log_dir=tensorboard_logs_dir, profile_batch=0,
                                         histogram_freq=0, write_graph=True, write_images=False),
             keras.callbacks.ModelCheckpoint(self.checkpoint_path,
                                             verbose=0, save_weights_only=True),
