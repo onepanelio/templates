@@ -11,29 +11,28 @@ Written by Waleed Abdulla
 Usage: import the module (see Jupyter notebooks for examples), or run from
        the command line as such:
 
-    # Train a new model starting from pre-trained COCO weights
-    python3 coco.py train --dataset=/path/to/coco/ --model=coco
-
-    # Train a new model starting from ImageNet weights. Also auto download COCO dataset
-    python3 coco.py train --dataset=/path/to/coco/ --model=imagenet --download=True
+    # Continue training from COCO pretrained weights
+    python3 main.py train --dataset=/path/to/coco/ --model=workflow_maskrcnn --num_classes=2 --extras="parameters string()" --logs=/path/to/output
 
     # Continue training a model that you had trained earlier
-    python3 coco.py train --dataset=/path/to/coco/ --model=/path/to/weights.h5
+    python3 main.py train --dataset=/path/to/coco/ --model=/path/to/weights.h5 --num_classes=2 --extras="parameters string()" --logs=/path/to/output
 
-    # Continue training the last model you trained
-    python3 coco.py train --dataset=/path/to/coco/ --model=last
+    # Continue training a model that you had trained earlier using workflows
+    python3 main.py train --dataset=/path/to/coco/ --model=workflow_maskrcnn --num_classes=2 --extras="parameters string()" --logs=/path/to/output --ref_model_path="reference name"
 
-    # Run COCO evaluatoin on the last model you trained
-    python3 coco.py evaluate --dataset=/path/to/coco/ --model=last
+    # Run COCO evaluation on the last model you trained
+    python3 main.py evaluate --dataset=/path/to/coco/ --model=last
+
 """
 
 import os
 import sys
 import time
+import json
+import csv
+import shutil
 import numpy as np
 from tensorflow.config import list_physical_devices
-import glob
-import boto3
 
 import imgaug  # https://github.com/aleju/imgaug (pip3 install imgaug)
 
@@ -46,8 +45,6 @@ import imgaug  # https://github.com/aleju/imgaug (pip3 install imgaug)
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as maskUtils
-
-import zipfile
 import urllib.request
 import shutil
 
@@ -77,10 +74,11 @@ class OnepanelConfig(Config):
     Derives from the base Config class and overrides values specific
     to the COCO dataset.
     """
-    def __init__(self, num_classes, num_steps):
+    def __init__(self, num_classes, params):
         self.NAME = "onepanel"
         self.NUM_CLASSES = num_classes
-        self.STEPS_PER_EPOCH = num_steps
+        if 'num_steps' in params:
+            self.STEPS_PER_EPOCH = int(params['num_steps'])
         self.IMAGES_PER_GPU = 1
         self.GPU_COUNT = 1
         num_gpus = len(list_physical_devices(device_type='GPU'))
@@ -94,31 +92,16 @@ class OnepanelConfig(Config):
 ############################################################
 
 class OnepanelDataset(utils.Dataset):
-    def load_coco(self, dataset_dir, subset, year=DEFAULT_DATASET_YEAR, class_ids=None,
-                  class_map=None, return_coco=False, auto_download=False):
+    def load_coco(self, dataset_dir):
         """Load a subset of the COCO dataset.
-        dataset_dir: The root directory of the COCO dataset.
-        subset: What to load (train, val, minival, valminusminival)
-        year: What dataset year to load (2014, 2017) as a string, not an integer
-        class_ids: If provided, only loads images that have the given classes.
-        class_map: TODO: Not implemented yet. Supports maping classes from
-            different datasets to the same class ID.
-        return_coco: If True, returns the COCO object.
-        auto_download: Automatically download and unzip MS-COCO images and annotations
+        dataset_dir: The root directory of the dataset in MS COCO format.
         """
 
-        if auto_download is True:
-            self.auto_download(dataset_dir, subset, year)
-
         coco = COCO("{}/annotations/instances_default.json".format(dataset_dir))
-        if subset == "minival" or subset == "valminusminival":
-            subset = "val"
         image_dir = "{}/images/".format(dataset_dir)
 
         # Load all classes or a subset?
-        if not class_ids:
-            # All classes
-            class_ids = sorted(coco.getCatIds())
+        class_ids = sorted(coco.getCatIds())
 
         # All images or a subset?
         if class_ids:
@@ -145,80 +128,7 @@ class OnepanelDataset(utils.Dataset):
                 height=coco.imgs[i]["height"],
                 annotations=coco.loadAnns(coco.getAnnIds(
                     imgIds=[i], catIds=class_ids, iscrowd=None)))
-        if return_coco:
-            return coco
 
-    def auto_download(self, dataDir, dataType, dataYear):
-        """Download the COCO dataset/annotations if requested.
-        dataDir: The root directory of the COCO dataset.
-        dataType: What to load (train, val, minival, valminusminival)
-        dataYear: What dataset year to load (2014, 2017) as a string, not an integer
-        Note:
-            For 2014, use "train", "val", "minival", or "valminusminival"
-            For 2017, only "train" and "val" annotations are available
-        """
-
-        # Setup paths and file names
-        if dataType == "minival" or dataType == "valminusminival":
-            imgDir = "{}/{}{}".format(dataDir, "val", dataYear)
-            imgZipFile = "{}/{}{}.zip".format(dataDir, "val", dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format("val", dataYear)
-        else:
-            imgDir = "{}/{}{}".format(dataDir, dataType, dataYear)
-            imgZipFile = "{}/{}{}.zip".format(dataDir, dataType, dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(dataType, dataYear)
-        # print("Image paths:"); print(imgDir); print(imgZipFile); print(imgURL)
-
-        # Create main folder if it doesn't exist yet
-        if not os.path.exists(dataDir):
-            os.makedirs(dataDir)
-
-        # Download images if not available locally
-        if not os.path.exists(imgDir):
-            os.makedirs(imgDir)
-            print("Downloading images to " + imgZipFile + " ...")
-            with urllib.request.urlopen(imgURL) as resp, open(imgZipFile, 'wb') as out:
-                shutil.copyfileobj(resp, out)
-            print("... done downloading.")
-            print("Unzipping " + imgZipFile)
-            with zipfile.ZipFile(imgZipFile, "r") as zip_ref:
-                zip_ref.extractall(dataDir)
-            print("... done unzipping")
-        print("Will use images in " + imgDir)
-
-        # Setup annotations data paths
-        annDir = "{}/annotations".format(dataDir)
-        if dataType == "minival":
-            annZipFile = "{}/instances_minival2014.json.zip".format(dataDir)
-            annFile = "{}/instances_minival2014.json".format(annDir)
-            annURL = "https://dl.dropboxusercontent.com/s/o43o90bna78omob/instances_minival2014.json.zip?dl=0"
-            unZipDir = annDir
-        elif dataType == "valminusminival":
-            annZipFile = "{}/instances_valminusminival2014.json.zip".format(dataDir)
-            annFile = "{}/instances_valminusminival2014.json".format(annDir)
-            annURL = "https://dl.dropboxusercontent.com/s/s3tw5zcg7395368/instances_valminusminival2014.json.zip?dl=0"
-            unZipDir = annDir
-        else:
-            annZipFile = "{}/annotations_trainval{}.zip".format(dataDir, dataYear)
-            annFile = "{}/instances_{}{}.json".format(annDir, dataType, dataYear)
-            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
-            unZipDir = dataDir
-        # print("Annotations paths:"); print(annDir); print(annFile); print(annZipFile); print(annURL)
-
-        # Download annotations if not available locally
-        if not os.path.exists(annDir):
-            os.makedirs(annDir)
-        if not os.path.exists(annFile):
-            if not os.path.exists(annZipFile):
-                print("Downloading zipped annotations to " + annZipFile + " ...")
-                with urllib.request.urlopen(annURL) as resp, open(annZipFile, 'wb') as out:
-                    shutil.copyfileobj(resp, out)
-                print("... done downloading.")
-            print("Unzipping " + annZipFile)
-            with zipfile.ZipFile(annZipFile, "r") as zip_ref:
-                zip_ref.extractall(unZipDir)
-            print("... done unzipping")
-        print("Will use annotations in " + annFile)
 
     def load_mask(self, image_id):
         """Load instance masks for the given image.
@@ -398,6 +308,18 @@ def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, image_ids=Non
 #  Training
 ############################################################
 
+def generate_csv(input_file, output_file):
+	with open(input_file) as f:
+		data = json.load(f)
+
+	csv_out = open(os.path.join(output_file, "classes.csv"), "w", newline='')
+
+	csv_writer = csv.writer(csv_out)
+	csv_writer.writerow(['labels','id'])
+
+	for lbl in data['categories']:
+		csv_writer.writerow([lbl['name'], lbl['id']])
+
 
 if __name__ == '__main__':
     import argparse
@@ -411,38 +333,33 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', required=True,
                         metavar="/path/to/coco/",
                         help='Directory of the MS-COCO dataset')
-    parser.add_argument('--year', required=False,
-                        default=DEFAULT_DATASET_YEAR,
-                        metavar="<year>",
-                        help='Year of the MS-COCO dataset (2014 or 2017) (default=2014)')
+    parser.add_argument('--val_dataset',
+                        metavar="/path/to/coco/",
+                        help='Directory of the validation MS-COCO dataset')
     parser.add_argument('--model', required=True,
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
     parser.add_argument('--logs', required=False,
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
-                        help='Logs and checkpoints directory (default=logs/)')
+                        help='Logs and checkpoints directory ')
     parser.add_argument('--limit', required=False,
                         default=500,
                         metavar="<image count>",
                         help='Images to use for evaluation (default=500)')
-    parser.add_argument('--download', required=False,
-                        default=False,
-                        metavar="<True|False>",
-                        help='Automatically download and unzip MS-COCO files (default=False)',
-                        type=bool)
     parser.add_argument('--extras', required=False, default=None, help="extra arguments from user")
     parser.add_argument('--num_classes', default=81, help="Number of classes present in a dataset")
     parser.add_argument('--ref_model_path', default='', help="ref model path")
+    parser.add_argument('--use_validation', default=False, type=bool)
     args = parser.parse_args()
     print("Command: ", args.command)
     print("Model: ", args.model)
+    print("Checkpoint: ", args.ref_model_path)
     print("Dataset: ", args.dataset)
-    print("Year: ", args.year)
+    print("Validation Dataset: ", args.val_dataset)
     print("Logs: ", args.logs)
     print("Extras: ", args.extras)
     print("Num Classes: ", args.num_classes)
-    print("Auto Download: ", args.download)
     extras = args.extras.split("\n")
     extras_processed = [i.split("#")[0].replace(" ","") for i in extras if i]
     params = {i.split('=')[0]:i.split('=')[1] for i in extras_processed}
@@ -450,7 +367,7 @@ if __name__ == '__main__':
        
     # Configurations
     if args.command == "train":
-        config = OnepanelConfig(int(args.num_classes), int(params['num_steps']))
+        config = OnepanelConfig(int(args.num_classes), params)
         # config.NUM_CLASSES = args.num_classes
     else:
         class InferenceConfig(OnepanelConfig):
@@ -462,7 +379,7 @@ if __name__ == '__main__':
     	        GPU_COUNT = num_gpus
             IMAGES_PER_GPU = 1
             DETECTION_MIN_CONFIDENCE = 0
-        config = InferenceConfig(int(args.num_classes))
+        config = InferenceConfig(int(args.num_classes), params)
     config.display()
 
     # Create model
@@ -474,42 +391,27 @@ if __name__ == '__main__':
                                   model_dir=args.logs)
 
     # Select weights file to load
-    if args.model.lower() == "coco":
-        model_path = COCO_MODEL_PATH
-    elif args.model.lower() == "last":
-        # Find last trained weights
-        model_path = model.find_last()
-    elif args.model.lower() == "imagenet":
-        # Start from ImageNet trained weights
-        model_path = model.get_imagenet_weights()
-    elif args.model.lower() == "workflow_maskrcnn":
+    if args.model.lower() == "workflow_maskrcnn":
         print("Executed from Onepanel workflow")
         if not os.path.exists("/mnt/data/models"):
             os.makedirs("/mnt/data/models")
-        if args.ref_model_path == '':
+        if args.ref_model_path == '' or not os.path.isfile("/mnt/data/models/onepanel_trained_model.h5"):
             #download model
-            urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
+            if not os.path.isfile("/mnt/data/models/mask_rcnn_coco.h5"):
+                urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
             model_path = "/mnt/data/models/mask_rcnn_coco.h5"
         else:
-            try:
-            #use provided ref model
-                s3_resource = boto3.resource('s3')
-                bucket = s3_resource.Bucket(os.getenv('AWS_BUCKET_NAME')) 
-                for object in bucket.objects.filter(Prefix = args.ref_model_path):
-                    print(os.path.basename(object.key))
-                    bucket.download_file(object.key,'/mnt/data/models/'+os.path.basename(object.key))
-                model_path = max(glob.glob("/mnt/data/models/"+"mask_rcnn*"), key=os.path.getctime)
-            except:
-                print("Something went wrong while trying to find model from ref model path, using default model.")
-                urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
-                model_path = "/mnt/data/models/mask_rcnn_coco.h5"
+            model_path = "/mnt/data/models/onepanel_trained_model.h5"
         print("Model found: {}".format(model_path))
     else:
-        model_path = "/onepanel/code/mask_rcnn_coco.h5"
+        if os.path.isfile(args.model):
+            model_path = args.model
+        else:
+            raise ValueError('Not a valid model use "model" flag with a valid model for custom pretrained model')
 
     # Load weights
     # print("Loading weights ", model_path)
-    if int(args.num_classes) != 81:
+    if int(args.num_classes) != 91:
         model.load_weights(model_path, by_name=True, exclude=[ "mrcnn_class_logits", "mrcnn_bbox_fc", "mrcnn_bbox", "mrcnn_mask"])
     else:
         model.load_weights(model_path, by_name=True)
@@ -519,16 +421,16 @@ if __name__ == '__main__':
         # Training dataset. Use the training set and 35K from the
         # validation set, as as in the Mask RCNN paper.
         dataset_train = OnepanelDataset()
-        dataset_train.load_coco(args.dataset, "train", year=args.year, auto_download=args.download)
-#         if args.year in '2014':
-#             dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
+        dataset_train.load_coco(args.dataset)
         dataset_train.prepare()
 
         # Validation dataset
-#         dataset_val = OnepanelDataset()
-#         val_type = "val" if args.year in '2017' else "minival"
-#         dataset_val.load_coco(args.dataset, val_type, year=args.year, auto_download=args.download)
-#         dataset_val.prepare()
+        if args.use_validation:
+            dataset_val = OnepanelDataset()
+            dataset_val.load_coco(args.val_dataset)
+            dataset_val.prepare()
+        else:
+            dataset_val = dataset_train
 
         # Image Augmentation
         # Right/Left flip 50% of the time
@@ -538,7 +440,7 @@ if __name__ == '__main__':
 
         # Training - Stage 1
         print("Training network heads")
-        model.train(dataset_train, dataset_train,
+        model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
                     epochs=int(params['stage-1-epochs']),
                     layers='heads',
@@ -547,7 +449,7 @@ if __name__ == '__main__':
         # Training - Stage 2
         # Finetune layers from ResNet stage 4 and up
         print("Fine tune Resnet stage 4 and up")
-        model.train(dataset_train, dataset_train,
+        model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
                     epochs=int(params['stage-2-epochs']),
                     layers='4+',
@@ -556,17 +458,24 @@ if __name__ == '__main__':
         # Training - Stage 3
         # Fine tune all layers
         print("Fine tune all layers")
-        model.train(dataset_train, dataset_train,
+        model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
                     epochs=int(params['stage-3-epochs']),
                     layers='all',
                     augmentation=augmentation)
 
+        # Extract trained model
+        print("Training complete\n Extracting trained model")
+        generate_csv(args.dataset, args.logs)
+        shutil.copyfile(
+            os.path.join(args.logs, "mask_rcnn_{}_{:04d}.h5".format(dataset_train.NAME.lower(), int(params['stage-3-epochs']))),
+            os.path.join(args.logs, "onepanel_trained_model.h5")
+        )
+
     elif args.command == "evaluate":
         # Validation dataset
         dataset_val = OnepanelDataset()
-        val_type = "val" if args.year in '2017' else "minival"
-        coco = dataset_val.load_coco(args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
+        coco = dataset_val.load_coco(args.val_dataset)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.limit))
         evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))
