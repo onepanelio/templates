@@ -398,6 +398,7 @@ if __name__ == '__main__':
         if args.ref_model_path == '' or not os.path.isfile("/mnt/data/models/onepanel_trained_model.h5"):
             #download model
             if not os.path.isfile("/mnt/data/models/mask_rcnn_coco.h5"):
+                print("Downloading COCO pretrained weights")
                 urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
             model_path = "/mnt/data/models/mask_rcnn_coco.h5"
         else:
@@ -466,7 +467,10 @@ if __name__ == '__main__':
 
         # Extract trained model
         print("Training complete\n Extracting trained model")
-        generate_csv(args.dataset, args.logs)
+        generate_csv(
+            os.path.join(args.dataset, "annotations/instances_default.json"), 
+            args.logs
+        )
         shutil.copyfile(
             os.path.join(args.logs, "mask_rcnn_{}_{:04d}.h5".format(dataset_train.NAME.lower(), int(params['stage-3-epochs']))),
             os.path.join(args.logs, "onepanel_trained_model.h5")
