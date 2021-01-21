@@ -472,7 +472,7 @@ if __name__ == '__main__':
             args.logs
         )
         shutil.copyfile(
-            os.path.join(args.logs, "mask_rcnn_{}_{:04d}.h5".format(dataset_train.NAME.lower(), int(params['stage-3-epochs']))),
+            os.path.join(args.logs, "mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage-3-epochs']))),
             os.path.join(args.logs, "onepanel_trained_model.h5")
         )
 
