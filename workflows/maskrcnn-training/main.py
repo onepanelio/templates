@@ -36,33 +36,15 @@ from tensorflow.config import list_physical_devices
 
 import imgaug  # https://github.com/aleju/imgaug (pip3 install imgaug)
 
-# Download and install the Python COCO tools from https://github.com/waleedka/coco
-# That's a fork from the original https://github.com/pdollar/coco with a bug
-# fix for Python 3.
-# I submitted a pull request https://github.com/Onepaneldataset/cocoapi/pull/50
-# If the PR is merged then use the original repo.
-# Note: Edit PythonAPI/Makefile and replace "python" with "python3".
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as maskUtils
 import urllib.request
 import shutil
 
-# Root directory of the project
-ROOT_DIR = os.path.abspath("../../")
-
 # Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
 from mrcnn import model as modellib, utils
-
-# Path to trained weights file
-COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
-
-# Directory to save logs and model checkpoints, if not provided
-# through the command line argument --logs
-DEFAULT_LOGS_DIR = os.path.join("/mnt/output/", "logs")
-DEFAULT_DATASET_YEAR = "2014"
 
 ############################################################
 #  Configurations
@@ -70,9 +52,9 @@ DEFAULT_DATASET_YEAR = "2014"
 
 
 class OnepanelConfig(Config):
-    """Configuration for training on MS COCO.
+    """Configuration for training on MS COCO format dataset.
     Derives from the base Config class and overrides values specific
-    to the COCO dataset.
+    to the MS COCO format.
     """
     def __init__(self, num_classes, params):
         self.NAME = "onepanel"
@@ -181,14 +163,6 @@ class OnepanelDataset(utils.Dataset):
         else:
             # Call super class to return an empty mask
             return super(OnepanelDataset, self).load_mask(image_id)
-
-    def image_reference(self, image_id):
-        """Return a link to the image in the COCO Website."""
-        info = self.image_info[image_id]
-        if info["source"] == "coco":
-            return "http://cocodataset.org/#explore?id={}".format(info["id"])
-        else:
-            super(OnepanelDataset, self).image_reference(image_id)
 
     # The following two functions are from pycocotools with a few changes.
 
@@ -340,7 +314,7 @@ if __name__ == '__main__':
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
     parser.add_argument('--logs', required=False,
-                        default=DEFAULT_LOGS_DIR,
+                        default="/mnt/output/logs",
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory ')
     parser.add_argument('--limit', required=False,
@@ -363,6 +337,18 @@ if __name__ == '__main__':
     extras = args.extras.split("\n")
     extras_processed = [i.split("#")[0].replace(" ","") for i in extras if i]
     params = {i.split('=')[0]:i.split('=')[1] for i in extras_processed}
+
+    # Check num epochs sanity
+    if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
+        params['stage-1-epochs'] = int(params['stage-1-epochs'])
+        params['stage-2-epochs'] = max(int(params['stage-1-epochs']), int(params['stage-2-epochs']))
+        params['stage-3-epochs'] = max(int(params['stage-3-epochs']), int(params['stage-2-epochs']))
+    else:
+        print('Num of epochs at each stage not provided, using default ones')
+        params['stage-1-epochs'] = 1
+        params['stage-2-epochs'] = 2
+        params['stage-3-epochs'] = 3
+
     print("Parameters: ", params)
        
     # Configurations
@@ -440,30 +426,39 @@ if __name__ == '__main__':
         # *** This training schedule is an example. Update to your needs ***
 
         # Training - Stage 1
-        print("Training network heads")
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
-                    epochs=int(params['stage-1-epochs']),
-                    layers='heads',
-                    augmentation=augmentation)
+        if params['stage-1-epochs'] > 0:
+            print("Training network heads")
+            model.train(dataset_train, dataset_val,
+                        learning_rate=config.LEARNING_RATE,
+                        epochs=params['stage-1-epochs'],
+                        layers='heads',
+                        augmentation=augmentation)
+        else:
+            print("First stage skipped, {} sent as num of first stage epochs".format(params['stage-1-epochs']))
 
         # Training - Stage 2
         # Finetune layers from ResNet stage 4 and up
-        print("Fine tune Resnet stage 4 and up")
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
-                    epochs=int(params['stage-2-epochs']),
-                    layers='4+',
-                    augmentation=augmentation)
+        if params['stage-2-epochs'] > params['stage-1-epochs']:
+            print("Fine tune Resnet stage 4 and up")
+            model.train(dataset_train, dataset_val,
+                        learning_rate=config.LEARNING_RATE,
+                        epochs=params['stage-2-epochs'],
+                        layers='4+',
+                        augmentation=augmentation)
+        else:
+            print("Second stage skipped, {} sent as num of second stage epochs".format(params['stage-2-epochs']))
 
         # Training - Stage 3
         # Fine tune all layers
-        print("Fine tune all layers")
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 10,
-                    epochs=int(params['stage-3-epochs']),
-                    layers='all',
-                    augmentation=augmentation)
+        if params['stage-3-epochs'] > params['stage-2-epochs']:
+            print("Fine tune all layers")
+            model.train(dataset_train, dataset_val,
+                        learning_rate=config.LEARNING_RATE / 10,
+                        epochs=params['stage-3-epochs'],
+                        layers='all',
+                        augmentation=augmentation)
+        else:
+            print("Third stage skipped, {} sent as num of third stage epochs".format(params['stage-3-epochs']))
 
         # Extract trained model
         print("Training complete\n Extracting trained model")
