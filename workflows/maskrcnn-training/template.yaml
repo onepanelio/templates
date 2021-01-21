@@ -75,15 +75,14 @@ templates:
           apt-get update \
           && apt-get install -y git wget libgl1-mesa-glx libsm6 libxext6 libxrender-dev \
           && pip install --upgrade pip \
-          && pip install pycocotools numpy scipy scikit-image imgaug boto3 \
-          && wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5 \
+          && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug \
           && cd /mnt/src/train/workflows/maskrcnn-training \
           && python main.py train --dataset=/mnt/data/datasets \
             --model=workflow_maskrcnn \
             --extras="{{workflow.parameters.hyperparameters}}"  \
             --ref_model_path="{{workflow.parameters.cvat-finetune-checkpoint}}"  \
-            --num_classes="{{workflow.parameters.cvat-num-classes}}" \
-          && python prepare_dataset.py /mnt/data/datasets/annotations/instances_default.json
+            --num_classes="{{workflow.parameters.cvat-num-classes}}"  \
+            --logs=/mnt/output
       command:
         - sh
         - -c
@@ -113,6 +112,11 @@ templates:
           path: /mnt/data/datasets/
           s3:
             key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+        - name: models
+          path: /mnt/data/models/
+          optional: true
+          s3:
+            key: '{{workflow.parameters.cvat-finetune-checkpoint}}'
         - git:
             repo: https://github.com/onepanelio/templates.git
           name: src
