@@ -63,7 +63,7 @@ templates:
           && pip install --upgrade pip \
           && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug pyyaml \
           && cd /mnt/src/train/workflows/maskrcnn-training \
-          && python main.py train --dataset=/mnt/data/datasets \
+          && python -u main.py train --dataset=/mnt/data/datasets \
             --model=workflow_maskrcnn \
             --extras="{{workflow.parameters.hyperparameters}}"  \
             --ref_model_path="{{workflow.parameters.cvat-finetune-checkpoint}}"  \
@@ -81,7 +81,7 @@ templates:
       workingDir: /mnt/src
     sidecars:
       - name: tensorboard
-        image: tensorflow/tensorflow:2.4.0
+        image: 'onepanel/dl:0.17.0'
         command: [ sh, -c ]
         env:
           - name: ONEPANEL_INTERACTIVE_SIDECAR
