@@ -30,6 +30,7 @@ import time
 import json
 import csv
 import shutil
+import yaml
 import numpy as np
 from tensorflow.config import list_physical_devices
 
@@ -58,9 +59,9 @@ class OnepanelConfig(Config):
     def __init__(self, num_classes, params):
         self.NAME = "onepanel"
         self.NUM_CLASSES = num_classes
-        if 'num_steps' in params:
-            self.STEPS_PER_EPOCH = int(params['num_steps'])
-        self.IMAGES_PER_GPU = 1
+        for param in params.keys():
+            if hasattr(self, param.upper()):
+                setattr(self, param.upper(), params[param])
         self.GPU_COUNT = 1
         num_gpus = len(list_physical_devices(device_type='GPU'))
         if num_gpus in [2,4,8]:
@@ -331,11 +332,11 @@ if __name__ == '__main__':
     print("Dataset: ", args.dataset)
     print("Validation Dataset: ", args.val_dataset)
     print("Logs: ", args.logs)
-    print("Extras: ", args.extras)
     print("Num Classes: ", args.num_classes)
-    extras = args.extras.split("\n")
-    extras_processed = [i.split("#")[0].replace(" ","") for i in extras if i]
-    params = {i.split('=')[0]:i.split('=')[1] for i in extras_processed}
+    print("Extras: ", args.extras)
+
+    params = yaml.load(args.extras)
+    params['steps_per_epoch'] = params.pop('num_steps')
 
     # Check num epochs sanity
     if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
@@ -348,7 +349,6 @@ if __name__ == '__main__':
         params['stage-2-epochs'] = 2
         params['stage-3-epochs'] = 3
 
-    print("Parameters: ", params)
        
     # Configurations
     if args.command == "train":
