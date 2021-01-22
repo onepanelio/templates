@@ -1,15 +1,9 @@
 arguments:
   parameters:
     - name: cvat-annotation-path
-      value: annotation-dump/sample_dataset
+      value: 'artifacts/{{workflow.namespace}}/annotations/'
       displayName: Dataset path
       hint: Path to annotated data (TFRecord format) in default object storage. In CVAT, this parameter will be pre-populated.
-      visibility: internal
-
-    - name: cvat-output-path
-      value: workflow-data/output/sample_output
-      hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
-      displayName: Workflow output path
       visibility: internal
       
     - name: val-split
@@ -43,12 +37,6 @@ arguments:
       type: textarea.textarea
       hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
 
-    - name: preprocessing-image
-      value: tensorflow/tensorflow:2.4.0
-      displayName: TensorFlow image for preprocessing
-      visibility: internal
-      hint: Select the GPU image if you are running on a GPU node pool
-
     - name: dump-format
       value: cvat_coco
       visibility: public
@@ -77,7 +65,7 @@ arguments:
 
     - name: hyperparameters
       value: |-
-        num-steps=10000
+        num_steps=10000
       displayName: Hyperparameters
       visibility: public
       type: textarea.textarea
@@ -85,7 +73,7 @@ arguments:
 
     - name: cvat-finetune-checkpoint
       value: ''
-      hint: Select the last fine-tune checkpoint for this model. It may take up to 5 minutes for a recent checkpoint show here. Leave empty if this is the first time you're training this model.
+      hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
       displayName: Checkpoint path
       visibility: public
 
@@ -108,17 +96,10 @@ arguments:
           value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
 
     - displayName: Node pool
-      hint: Name of node pool or group to run this workflow task
-      name: preprocessing-node-pool
-      value: Standard_D4s_v3
-      visibility: internal
-      required: true
-
-    - displayName: Node pool
-      hint: Name of node pool or group to run this workflow task
+      hint: Name of node pool or group to run tasks
       type: select.nodepool
       name: sys-node-pool
-      value: Standard_D4s_v3
+      value: default
       visibility: public
       required: true
 
@@ -195,11 +176,9 @@ templates:
         - name: model
           optional: true
           path: /mnt/output
-          s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
     sidecars:
       - name: tensorboard
-        image: tensorflow/tensorflow:1.15.5
+        image: '{{workflow.parameters.tf-image}}'
         command:
           - sh
           - '-c'
@@ -215,6 +194,7 @@ templates:
   - container:
       args:
         - |
+          pip install --upgrade pip && \
           pip install opencv-python albumentations tqdm pyyaml pycocotools && \
           cd /mnt/src/preprocessing/workflows/albumentations-preprocessing && \
           python main.py \
@@ -225,7 +205,7 @@ templates:
       command:
         - sh
         - -c
-      image: '{{workflow.parameters.preprocessing-image}}'
+      image: '{{workflow.parameters.tf-image}}'
       volumeMounts:
         - mountPath: /mnt/data
           name: raw-data
@@ -233,13 +213,13 @@ templates:
           name: processed-data
       workingDir: /mnt/src
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.preprocessing-node-pool}}'
+      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     inputs:
       artifacts:
         - name: data
           path: /mnt/data/datasets/
           s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+            key: '{{workflow.parameters.cvat-annotation-path}}'
         - git:
             repo: https://github.com/onepanelio/templates.git
           name: src
