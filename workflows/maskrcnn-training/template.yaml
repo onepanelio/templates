@@ -61,7 +61,7 @@ templates:
           apt-get update \
           && apt-get install -y git wget libgl1-mesa-glx libsm6 libxext6 libxrender-dev \
           && pip install --upgrade pip \
-          && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug pyyaml \
+          && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug pyyaml tqdm \
           && cd /mnt/src/train/workflows/maskrcnn-training \
           && python -u main.py train --dataset=/mnt/data/datasets \
             --model=workflow_maskrcnn \
