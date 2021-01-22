@@ -26,7 +26,6 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
 """
 
 import os
-import sys
 import time
 import json
 import csv

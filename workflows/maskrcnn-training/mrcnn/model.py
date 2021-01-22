@@ -27,7 +27,7 @@ from mrcnn import utils
 
 # Requires TensorFlow 2.0+
 from distutils.version import LooseVersion
-assert LooseVersion(tf.__version__) >= LooseVersion("2.0")
+assert LooseVersion(tf.__version__) >= LooseVersion("2.3")
 
 tf.compat.v1.disable_eager_execution()
 
@@ -2303,21 +2303,47 @@ class MaskRCNN(object):
         }
         if layers in layer_regex.keys():
             layers = layer_regex[layers]
-
-        data_spec = ((
-            tf.TensorSpec(shape=(None, None, None, 3)), 
-            tf.TensorSpec(shape=(None, None), dtype=tf.float64), 
-            tf.TensorSpec(shape=(None, None, None), dtype=tf.int32), 
-            tf.TensorSpec(shape=(None, None, None), dtype=tf.float64), 
-            tf.TensorSpec(shape=(None, None), dtype=tf.int32), 
-            tf.TensorSpec(shape=(None, None, None), dtype=tf.int32),
-            tf.TensorSpec(shape=(None, None, None, None), dtype=tf.float32)
-        ), tf.TensorSpec(shape=()))
+        
+        ###
+        ### Code for tf>2.4
+        ###
+        # data_spec = ((
+        #     tf.TensorSpec(shape=(None, None, None, 3)), 
+        #     tf.TensorSpec(shape=(None, None), dtype=tf.float64), 
+        #     tf.TensorSpec(shape=(None, None, None), dtype=tf.int32), 
+        #     tf.TensorSpec(shape=(None, None, None), dtype=tf.float64), 
+        #     tf.TensorSpec(shape=(None, None), dtype=tf.int32), 
+        #     tf.TensorSpec(shape=(None, None, None), dtype=tf.int32),
+        #     tf.TensorSpec(shape=(None, None, None, None), dtype=tf.float32)
+        # ), tf.TensorSpec(shape=()))
 
         # Data generators
+        # train_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True,
+        #                                  augmentation=augmentation), output_signature=data_spec)   
+        # val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_signature=data_spec)
+
+        ### End Code for tf>2.4
+
+        ### Code for tf == 2.3 Remove when upgrade since use deprecated features
+
+        data_spec = ((tf.float32, tf.float64, tf.int32, tf.float64, tf.int32, tf.int32, tf.float32),tf.float32)
+
+        data_shapes = ((
+            tf.TensorShape([None, None, None, 3]),
+            tf.TensorShape([None, None]),
+            tf.TensorShape([None, None, None]),
+            tf.TensorShape([None, None, None]),
+            tf.TensorShape([None, None]),
+            tf.TensorShape([None, None, None]),
+            tf.TensorShape([None, None, None, None]),
+        ), tf.TensorShape([]))
+
         train_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True,
-                                         augmentation=augmentation), output_signature=data_spec)   
-        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_signature=data_spec)
+                                         augmentation=augmentation), output_types=data_spec, output_shapes=data_shapes)   
+        val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_types=data_spec, output_shapes=data_shapes)
+
+        ### End for tf == 2.3
+
 
         # Create log_dir if it does not exist
         tensorboard_logs_dir = os.path.join(self.log_dir, "logs")
