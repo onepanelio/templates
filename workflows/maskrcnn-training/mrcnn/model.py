@@ -22,6 +22,7 @@ import tensorflow.keras.backend as K
 import tensorflow.keras.layers as KL
 from tensorflow.python.eager import context
 import tensorflow.keras.models as KM
+from tqdm.keras import TqdmCallback
 
 from mrcnn import utils
 
@@ -2356,6 +2357,7 @@ class MaskRCNN(object):
                                         histogram_freq=0, write_graph=True, write_images=False),
             keras.callbacks.ModelCheckpoint(self.checkpoint_path,
                                             verbose=0, save_weights_only=True),
+            TqdmCallback()
         ]
 
         # Add custom callbacks to the list
@@ -2387,6 +2389,7 @@ class MaskRCNN(object):
             max_queue_size=100,
             workers=workers,
             use_multiprocessing=True,
+            verbose=0
         )
         self.epoch = max(self.epoch, epochs)
 
