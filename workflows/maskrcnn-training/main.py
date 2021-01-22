@@ -1,10 +1,8 @@
 """
 Mask R-CNN
-Configurations and data loading code for MS COCO.
 
 Copyright (c) 2017 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
-Written by Waleed Abdulla
 
 ------------------------------------------------------------
 
@@ -56,16 +54,16 @@ class OnepanelConfig(Config):
     Derives from the base Config class and overrides values specific
     to the MS COCO format.
     """
-    def __init__(self, num_classes, params):
+    def __init__(self, params):
         self.NAME = "onepanel"
-        self.NUM_CLASSES = num_classes
         for param in params.keys():
             if hasattr(self, param.upper()):
                 setattr(self, param.upper(), params[param])
-        self.GPU_COUNT = 1
-        num_gpus = len(list_physical_devices(device_type='GPU'))
-        if num_gpus in [2,4,8]:
-            self.GPU_COUNT = num_gpus
+        if 'gpu_count' not in params:
+            self.GPU_COUNT = 1
+            num_gpus = len(list_physical_devices(device_type='GPU'))
+            if num_gpus in [2,4,8]:
+                self.GPU_COUNT = num_gpus
         super().__init__()
     
 
@@ -282,6 +280,80 @@ def evaluate_coco(model, dataset, coco, eval_type="bbox", limit=0, image_ids=Non
 #  Training
 ############################################################
 
+def evaluate(dataset_dir, model, limit):
+    # Validation dataset
+    dataset_val = OnepanelDataset()
+    coco = dataset_val.load_coco(dataset_dir)
+    dataset_val.prepare()
+    print("Running COCO evaluation on {} images.".format(limit))
+    evaluate_coco(model, dataset_val, coco, "bbox", limit=int(limit))
+
+
+def train(params, model, config, train_dataset, val_dataset, logs, use_validation=False):
+    # Training dataset. Use the training set and 35K from the
+    # validation set, as as in the Mask RCNN paper.
+    dataset_train = OnepanelDataset()
+    dataset_train.load_coco(train_dataset)
+    dataset_train.prepare()
+
+    # Validation dataset
+    if use_validation:
+        dataset_val = OnepanelDataset()
+        dataset_val.load_coco(val_dataset)
+        dataset_val.prepare()
+    else:
+        dataset_val = dataset_train
+
+    # Image Augmentation
+    augmentation = get_augmentations(params)
+
+    # *** Training schedule ***
+
+    # Training - Stage 1
+    if params['stage-1-epochs'] > 0:
+        print("Training network heads")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=params['stage-1-epochs'],
+                    layers='heads',
+                    augmentation=augmentation)
+    else:
+        print("First stage skipped, {} sent as num of first stage epochs".format(params['stage-1-epochs']))
+
+    # Training - Stage 2
+    # Finetune layers from ResNet stage 4 and up
+    if params['stage-2-epochs'] > params['stage-1-epochs']:
+        print("Fine tune Resnet stage 4 and up")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=params['stage-2-epochs'],
+                    layers='4+',
+                    augmentation=augmentation)
+    else:
+        print("Second stage skipped, {} sent as num of second stage epochs".format(params['stage-2-epochs']))
+
+    # Training - Stage 3
+    # Fine tune all layers
+    if params['stage-3-epochs'] > params['stage-2-epochs']:
+        print("Fine tune all layers")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE / 10,
+                    epochs=params['stage-3-epochs'],
+                    layers='all',
+                    augmentation=augmentation)
+    else:
+        print("Third stage skipped, {} sent as num of third stage epochs".format(params['stage-3-epochs']))
+
+    # Extract trained model
+    print("Training complete\n Extracting trained model")
+    extract_model(train_dataset, logs, config, params)
+    print("Workflow complete!")
+
+
+############################################################
+#  Utils
+############################################################
+
 def generate_csv(input_file, output_file):
 	with open(input_file) as f:
 		data = json.load(f)
@@ -294,6 +366,134 @@ def generate_csv(input_file, output_file):
 	for lbl in data['categories']:
 		csv_writer.writerow([lbl['name'], lbl['id']])
 
+
+def preprocess_inputs(args):
+    print("Command: ", args.command)
+    print("Model: ", args.model)
+    print("Checkpoint: ", args.ref_model_path)
+    print("Dataset: ", args.dataset)
+    print("Validation Dataset: ", args.val_dataset)
+    print("Logs: ", args.logs)
+    print("Num Classes: ", args.num_classes)
+    print("Extras: ", args.extras)
+
+    params = yaml.load(args.extras)
+    params['steps_per_epoch'] = params.pop('num_steps')
+    params['num_classes'] = int(args.num_classes)
+
+    # Check num epochs sanity
+    if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
+        params['stage-1-epochs'] = int(params['stage-1-epochs'])
+        params['stage-2-epochs'] = max(int(params['stage-1-epochs']), int(params['stage-2-epochs']))
+        params['stage-3-epochs'] = max(int(params['stage-3-epochs']), int(params['stage-2-epochs']))
+    else:
+        print('Num of epochs at each stage not provided, using default ones')
+        params['stage-1-epochs'] = 1
+        params['stage-2-epochs'] = 2
+        params['stage-3-epochs'] = 3
+    return params
+
+
+def get_config(command, params):
+    if command == "train":
+        config = OnepanelConfig(params)
+        # config.NUM_CLASSES = args.num_classes
+    else:
+        class InferenceConfig(OnepanelConfig):
+            # Set batch size to 1 since we'll be running inference on
+            # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+            def __init__(self, params):
+                params['gpu_count'] = 1
+                params['images_per_gpu'] = 1
+                super().__init__(params)
+        config = InferenceConfig(params)
+    return config
+
+
+def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
+    if command == "train":
+        model = modellib.MaskRCNN(mode="training", config=config,
+                                  model_dir=logs_dir)
+    else:
+        model = modellib.MaskRCNN(mode="inference", config=config,
+                                  model_dir=logs_dir)
+
+    # Select weights file to load
+    if selected_model.lower() == "workflow_maskrcnn":
+        print("Executed from Onepanel workflow")
+        if not os.path.exists("/mnt/data/models"):
+            os.makedirs("/mnt/data/models")
+        if ref_model_path == '' or not os.path.isfile("/mnt/data/models/onepanel_trained_model.h5"):
+            #download model
+            if not os.path.isfile("/mnt/data/models/mask_rcnn_coco.h5"):
+                print("Downloading COCO pretrained weights")
+                urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
+            model_path = "/mnt/data/models/mask_rcnn_coco.h5"
+        else:
+            model_path = "/mnt/data/models/onepanel_trained_model.h5"
+        print("Model found: {}".format(model_path))
+    else:
+        if os.path.isfile(selected_model):
+            model_path = selected_model
+        else:
+            raise ValueError('Not a valid model use "model" flag with a valid model for custom pretrained model')
+
+    
+    # Load weights
+    # print("Loading weights ", model_path)
+    if int(args.num_classes) != 81:
+        model.load_weights(model_path, by_name=True, exclude=[ "mrcnn_class_logits", "mrcnn_bbox_fc", "mrcnn_bbox", "mrcnn_mask"])
+    else:
+        model.load_weights(model_path, by_name=True)
+    return model, model_path
+
+
+def extract_model(train_dataset, logs, config, params):
+    generate_csv(
+        os.path.join(train_dataset, "annotations/instances_default.json"), 
+        logs
+    )
+    shutil.copyfile(
+        os.path.join(logs, "mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage-3-epochs']))),
+        os.path.join(logs, "onepanel_trained_model.h5")
+    )
+
+def get_augmentations(params):
+    # Image Augmentation
+    if 'augmentations' in params:
+        ## TODO: implement augmentation parsing
+        augmentation = imgaug.augmenters.Fliplr(0.5)
+    else:
+        # Right/Left flip 50% of the time
+        augmentation = imgaug.augmenters.Fliplr(0.5)
+    return augmentation
+
+############################################################
+#  Main
+############################################################
+
+def main(args):
+    params = preprocess_inputs(args)
+
+    # Configurations
+    config = get_config(args.command, params)
+    config.display()
+
+    # Create model
+    model, model_path = create_model(args.command, config, args.logs, args.model, args.ref_model_path)
+
+
+    # Train or evaluate
+    if args.command == "train":
+        train(params, model, config, args.dataset, args.val_dataset, args.logs, args.use_validation)
+
+    elif args.command == "evaluate":
+        # Validation dataset
+        evaluate(args.dataset, model, args.limit)
+
+    else:
+        print("'{}' is not recognized. "
+              "Use 'train' or 'evaluate'".format(args.command))
 
 if __name__ == '__main__':
     import argparse
@@ -326,157 +526,6 @@ if __name__ == '__main__':
     parser.add_argument('--ref_model_path', default='', help="ref model path")
     parser.add_argument('--use_validation', default=False, type=bool)
     args = parser.parse_args()
-    print("Command: ", args.command)
-    print("Model: ", args.model)
-    print("Checkpoint: ", args.ref_model_path)
-    print("Dataset: ", args.dataset)
-    print("Validation Dataset: ", args.val_dataset)
-    print("Logs: ", args.logs)
-    print("Num Classes: ", args.num_classes)
-    print("Extras: ", args.extras)
-
-    params = yaml.load(args.extras)
-    params['steps_per_epoch'] = params.pop('num_steps')
-
-    # Check num epochs sanity
-    if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
-        params['stage-1-epochs'] = int(params['stage-1-epochs'])
-        params['stage-2-epochs'] = max(int(params['stage-1-epochs']), int(params['stage-2-epochs']))
-        params['stage-3-epochs'] = max(int(params['stage-3-epochs']), int(params['stage-2-epochs']))
-    else:
-        print('Num of epochs at each stage not provided, using default ones')
-        params['stage-1-epochs'] = 1
-        params['stage-2-epochs'] = 2
-        params['stage-3-epochs'] = 3
-
-       
-    # Configurations
-    if args.command == "train":
-        config = OnepanelConfig(int(args.num_classes), params)
-        # config.NUM_CLASSES = args.num_classes
-    else:
-        class InferenceConfig(OnepanelConfig):
-            # Set batch size to 1 since we'll be running inference on
-            # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-            GPU_COUNT = 1
-            num_gpus = len(list_physical_devices(device_type='GPU'))
-            if num_gpus in [2,4,8]:
-    	        GPU_COUNT = num_gpus
-            IMAGES_PER_GPU = 1
-            DETECTION_MIN_CONFIDENCE = 0
-        config = InferenceConfig(int(args.num_classes), params)
-    config.display()
-
-    # Create model
-    if args.command == "train":
-        model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
-    else:
-        model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
-
-    # Select weights file to load
-    if args.model.lower() == "workflow_maskrcnn":
-        print("Executed from Onepanel workflow")
-        if not os.path.exists("/mnt/data/models"):
-            os.makedirs("/mnt/data/models")
-        if args.ref_model_path == '' or not os.path.isfile("/mnt/data/models/onepanel_trained_model.h5"):
-            #download model
-            if not os.path.isfile("/mnt/data/models/mask_rcnn_coco.h5"):
-                print("Downloading COCO pretrained weights")
-                urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
-            model_path = "/mnt/data/models/mask_rcnn_coco.h5"
-        else:
-            model_path = "/mnt/data/models/onepanel_trained_model.h5"
-        print("Model found: {}".format(model_path))
-    else:
-        if os.path.isfile(args.model):
-            model_path = args.model
-        else:
-            raise ValueError('Not a valid model use "model" flag with a valid model for custom pretrained model')
-
-    # Load weights
-    # print("Loading weights ", model_path)
-    if int(args.num_classes) != 91:
-        model.load_weights(model_path, by_name=True, exclude=[ "mrcnn_class_logits", "mrcnn_bbox_fc", "mrcnn_bbox", "mrcnn_mask"])
-    else:
-        model.load_weights(model_path, by_name=True)
-
-    # Train or evaluate
-    if args.command == "train":
-        # Training dataset. Use the training set and 35K from the
-        # validation set, as as in the Mask RCNN paper.
-        dataset_train = OnepanelDataset()
-        dataset_train.load_coco(args.dataset)
-        dataset_train.prepare()
-
-        # Validation dataset
-        if args.use_validation:
-            dataset_val = OnepanelDataset()
-            dataset_val.load_coco(args.val_dataset)
-            dataset_val.prepare()
-        else:
-            dataset_val = dataset_train
-
-        # Image Augmentation
-        # Right/Left flip 50% of the time
-        augmentation = imgaug.augmenters.Fliplr(0.5)
-
-        # *** This training schedule is an example. Update to your needs ***
-
-        # Training - Stage 1
-        if params['stage-1-epochs'] > 0:
-            print("Training network heads")
-            model.train(dataset_train, dataset_val,
-                        learning_rate=config.LEARNING_RATE,
-                        epochs=params['stage-1-epochs'],
-                        layers='heads',
-                        augmentation=augmentation)
-        else:
-            print("First stage skipped, {} sent as num of first stage epochs".format(params['stage-1-epochs']))
-
-        # Training - Stage 2
-        # Finetune layers from ResNet stage 4 and up
-        if params['stage-2-epochs'] > params['stage-1-epochs']:
-            print("Fine tune Resnet stage 4 and up")
-            model.train(dataset_train, dataset_val,
-                        learning_rate=config.LEARNING_RATE,
-                        epochs=params['stage-2-epochs'],
-                        layers='4+',
-                        augmentation=augmentation)
-        else:
-            print("Second stage skipped, {} sent as num of second stage epochs".format(params['stage-2-epochs']))
-
-        # Training - Stage 3
-        # Fine tune all layers
-        if params['stage-3-epochs'] > params['stage-2-epochs']:
-            print("Fine tune all layers")
-            model.train(dataset_train, dataset_val,
-                        learning_rate=config.LEARNING_RATE / 10,
-                        epochs=params['stage-3-epochs'],
-                        layers='all',
-                        augmentation=augmentation)
-        else:
-            print("Third stage skipped, {} sent as num of third stage epochs".format(params['stage-3-epochs']))
-
-        # Extract trained model
-        print("Training complete\n Extracting trained model")
-        generate_csv(
-            os.path.join(args.dataset, "annotations/instances_default.json"), 
-            args.logs
-        )
-        shutil.copyfile(
-            os.path.join(args.logs, "mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage-3-epochs']))),
-            os.path.join(args.logs, "onepanel_trained_model.h5")
-        )
-
-    elif args.command == "evaluate":
-        # Validation dataset
-        dataset_val = OnepanelDataset()
-        coco = dataset_val.load_coco(args.val_dataset)
-        dataset_val.prepare()
-        print("Running COCO evaluation on {} images.".format(args.limit))
-        evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))
-    else:
-        print("'{}' is not recognized. "
-              "Use 'train' or 'evaluate'".format(args.command))
+    
+    # Run Workflow
+    main(args)
