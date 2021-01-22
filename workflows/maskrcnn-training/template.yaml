@@ -40,20 +40,6 @@ arguments:
       displayName: CVAT dump format
       visibility: public
 
-    - name: tf-image
-      visibility: public
-      value: tensorflow/tensorflow:2.4.0
-      type: select.select
-      displayName: Select TensorFlow image
-      hint: Select the GPU image if you are running on a GPU node pool
-      options:
-        - name: 'TensorFlow 2.4.0 CPU Image'
-          value: 'tensorflow/tensorflow:2.4.0'
-        - name: 'TensorFlow 2.4.0 GPU Image'
-          value: 'tensorflow/tensorflow:2.4.0-gpu'
-        - name: 'Onepanel DL v0.17'
-          value: 'onepanel/dl:0.17.0'
-
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
       type: select.nodepool
@@ -75,7 +61,7 @@ templates:
           apt-get update \
           && apt-get install -y git wget libgl1-mesa-glx libsm6 libxext6 libxrender-dev \
           && pip install --upgrade pip \
-          && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug \
+          && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug pyyaml \
           && cd /mnt/src/train/workflows/maskrcnn-training \
           && python main.py train --dataset=/mnt/data/datasets \
             --model=workflow_maskrcnn \
@@ -86,7 +72,7 @@ templates:
       command:
         - sh
         - -c
-      image: '{{workflow.parameters.tf-image}}'
+      image: 'onepanel/dl:0.17.0'
       volumeMounts:
         - mountPath: /mnt/data
           name: data
