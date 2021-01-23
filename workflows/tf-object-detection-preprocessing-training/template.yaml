@@ -44,7 +44,7 @@ arguments:
     - name: cvat-model
       value: frcnn-res50-coco
       displayName: Model
-      hint: TF Detection API's model to use for training.
+      hint: Model architecture to use for training.
       type: select.select
       visibility: public
       options:
