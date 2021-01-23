@@ -57,11 +57,11 @@ def process_params(params):
 
     return model_params, model_architecture
 
-def convert_labels_to_csv(path):
+def convert_labels_to_csv(path, output_path):
     with open(os.path.join(path, 'label_map.pbtxt'),'r') as f:
         txt = f.readlines()
     print('Generating label maps file...')
-    csv_out = open(os.path.join('/mnt/output/', 'classes.csv'), 'w')
+    csv_out = open(os.path.join(output_path, 'classes.csv'), 'w')
     csv_writer = csv.writer(csv_out)
     csv_writer.writerow(['labels'])
     data = {}
@@ -74,7 +74,7 @@ def convert_labels_to_csv(path):
             csv_writer.writerow([n])
             data[i] = n
     d = {'label_map': data}
-    with open(os.path.join('/mnt/output/', 'label_map.json'), 'w') as outfile:
+    with open(os.path.join(output_path, 'label_map.json'), 'w') as outfile:
         json.dump(d, outfile)
     print('Finished generating label maps file')
 
