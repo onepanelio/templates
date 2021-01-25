@@ -39,7 +39,7 @@ arguments:
 
     - name: dump-format
       value: cvat_coco
-      visibility: public
+      visibility: private
       
     - name: cvat-model
       value: frcnn-res50-coco
