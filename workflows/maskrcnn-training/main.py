@@ -289,7 +289,7 @@ def evaluate(dataset_dir, model, limit):
     evaluate_coco(model, dataset_val, coco, "bbox", limit=int(limit))
 
 
-def train(params, model, config, train_dataset, val_dataset, logs, use_validation=False):
+def train(params, model, config, train_dataset, val_dataset, output_folder, use_validation=False):
     # Training dataset. Use the training set and 35K from the
     # validation set, as as in the Mask RCNN paper.
     dataset_train = OnepanelDataset()
@@ -346,7 +346,7 @@ def train(params, model, config, train_dataset, val_dataset, logs, use_validatio
 
     # Extract trained model
     print("Training complete\n Extracting trained model")
-    extract_model(train_dataset, logs, config, params)
+    extract_model(train_dataset, output_folder, config, params)
     print("Workflow complete!")
 
 
@@ -373,7 +373,7 @@ def preprocess_inputs(args):
     print("Checkpoint: ", args.ref_model_path)
     print("Dataset: ", args.dataset)
     print("Validation Dataset: ", args.val_dataset)
-    print("Logs: ", args.logs)
+    print("Logs: ", args.output)
     print("Num Classes: ", args.num_classes)
     print("Extras: ", args.extras)
 
@@ -448,14 +448,14 @@ def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
     return model, model_path
 
 
-def extract_model(train_dataset, logs, config, params):
+def extract_model(train_dataset, output_dir, config, params):
     generate_csv(
         os.path.join(train_dataset, "annotations/instances_default.json"), 
-        logs
+        os.path.join(output_dir, "model")
     )
     shutil.copyfile(
-        os.path.join(logs, "mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage-3-epochs']))),
-        os.path.join(logs, "onepanel_trained_model.h5")
+        os.path.join(output_dir, "checkpoints/mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage-3-epochs']))),
+        os.path.join(output_dir, "model/onepanel_trained_model.h5")
     )
 
 def get_augmentations(params):
@@ -468,11 +468,22 @@ def get_augmentations(params):
         augmentation = imgaug.augmenters.Fliplr(0.5)
     return augmentation
 
+def create_output_folders(output_dir):
+    subdirs = ['tensorboard', 'checkpoints', 'model'] 
+    for subdir in subdirs:
+        dir = os.path.join(output_dir, subdir)
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+            print('Path {} created!'.format(dir))
+
 ############################################################
 #  Main
 ############################################################
 
 def main(args):
+    
+    create_output_folders(args.output)
+
     params = preprocess_inputs(args)
 
     # Configurations
@@ -480,12 +491,12 @@ def main(args):
     config.display()
 
     # Create model
-    model, model_path = create_model(args.command, config, args.logs, args.model, args.ref_model_path)
+    model, model_path = create_model(args.command, config, args.output, args.model, args.ref_model_path)
 
 
     # Train or evaluate
     if args.command == "train":
-        train(params, model, config, args.dataset, args.val_dataset, args.logs, args.use_validation)
+        train(params, model, config, args.dataset, args.val_dataset, args.output, args.use_validation)
 
     elif args.command == "evaluate":
         # Validation dataset
@@ -513,7 +524,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', required=True,
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
-    parser.add_argument('--logs', required=False,
+    parser.add_argument('--output', required=False,
                         default="/mnt/output/logs",
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory ')

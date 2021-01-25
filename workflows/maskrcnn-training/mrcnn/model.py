@@ -2250,7 +2250,7 @@ class MaskRCNN(object):
         self.log_dir = self.model_dir
 
         # Path to save after each epoch. Include placeholders that get filled by Keras.
-        self.checkpoint_path = os.path.join(self.log_dir, "mask_rcnn_{}_*epoch*.h5".format(
+        self.checkpoint_path = os.path.join(self.log_dir, "checkpoints/mask_rcnn_{}_*epoch*.h5".format(
             self.config.NAME.lower()))
         self.checkpoint_path = self.checkpoint_path.replace(
             "*epoch*", "{epoch:04d}")
@@ -2347,7 +2347,7 @@ class MaskRCNN(object):
 
 
         # Create log_dir if it does not exist
-        tensorboard_logs_dir = os.path.join(self.log_dir, "logs")
+        tensorboard_logs_dir = os.path.join(self.log_dir, "tensorboard")
         if not os.path.exists(tensorboard_logs_dir):
             os.makedirs(tensorboard_logs_dir)
 
