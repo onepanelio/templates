@@ -1,20 +1,14 @@
 arguments:
   parameters:
     - name: cvat-annotation-path
-      value: annotation-dump/sample_dataset
+      value: 'artifacts/{{workflow.namespace}}/annotations/'
       hint: Path to annotated data in default object storage. In CVAT, this parameter will be pre-populated.
       displayName: Dataset path
       visibility: internal
 
-    - name: cvat-output-path
-      value: workflow-data/output/sample_output
-      hint: Path to store output artifacts in default object storage. In CVAT, this parameter will be pre-populated.
-      displayName: Workflow output path
-      visibility: internal
-
     - name: cvat-finetune-checkpoint
       value: ''
-      hint: Select the last fine-tune checkpoint for this model. It may take up to 5 minutes for a recent checkpoint show here. Leave empty if this is the first time you're training this model.
+      hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
       displayName: Checkpoint path
       visibility: public
 
@@ -24,32 +18,27 @@ arguments:
       value: '11'
       visibility: internal
 
+    - name: cvat-num-classes-addend
+      displayName: Number of classes addend
+      hint: Addend to number of classes - in this case 1 for background
+      value: '1'
+      visibility: private
+
     - name: hyperparameters
       displayName: Hyperparameters
       visibility: public
       type: textarea.textarea
       value: |-
-        stage-1-epochs=1    #  Epochs for network heads
-        stage-2-epochs=2    #  Epochs for finetune layers
-        stage-3-epochs=3    #  Epochs for all layers
+        stage-1-epochs: 1    #  Epochs for network heads
+        stage-2-epochs: 2    #  Epochs for finetune layers
+        stage-3-epochs: 3    #  Epochs for all layers
+        num_steps: 1000     #   Num steps per epoch
       hint: "See <a href='https://docs.onepanel.ai/docs/getting-started/use-cases/computervision/annotation/cvat/cvat_annotation_model#maskrcnn-hyperparameters' target='_blank'>documentation</a> for more information on parameters."
 
     - name: dump-format
       value: cvat_coco
       displayName: CVAT dump format
-      visibility: public
-
-    - name: tf-image
-      visibility: public
-      value: tensorflow/tensorflow:1.13.1-py3
-      type: select.select
-      displayName: Select TensorFlow image
-      hint: Select the GPU image if you are running on a GPU node pool
-      options:
-        - name: 'TensorFlow 1.13.1 CPU Image'
-          value: 'tensorflow/tensorflow:1.13.1-py3'
-        - name: 'TensorFlow 1.13.1 GPU Image'
-          value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
+      visibility: private
 
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
@@ -70,27 +59,20 @@ templates:
       args:
         - |
           apt-get update \
-          && apt-get install -y git wget libglib2.0-0 libsm6 libxext6 libxrender-dev \
-          && pip install -r requirements.txt \
-          && pip install boto3 pyyaml google-cloud-storage \
-          && git clone https://github.com/waleedka/coco \
-          && cd coco/PythonAPI \
-          && python setup.py build_ext install \
-          && rm -rf build \
-          && cd ../../ \
-          && wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5 \
-          && python setup.py install && ls \
-          && python samples/coco/cvat.py train --dataset=/mnt/data/datasets \
+          && apt-get install -y git wget libgl1-mesa-glx libsm6 libxext6 libxrender-dev \
+          && pip install --upgrade pip \
+          && pip install pycocotools numpy scipy scikit-image==0.16.2 imgaug pyyaml tqdm \
+          && cd /mnt/src/train/workflows/maskrcnn-training \
+          && python -u main.py train --dataset=/mnt/data/datasets \
             --model=workflow_maskrcnn \
             --extras="{{workflow.parameters.hyperparameters}}"  \
             --ref_model_path="{{workflow.parameters.cvat-finetune-checkpoint}}"  \
-            --num_classes="{{workflow.parameters.cvat-num-classes}}" \
-          && cd /mnt/src/ \
-          && python prepare_dataset.py /mnt/data/datasets/annotations/instances_default.json
+            --num_classes="{{workflow.parameters.cvat-num-classes}}"  \
+            --logs=/mnt/output
       command:
         - sh
         - -c
-      image: '{{workflow.parameters.tf-image}}'
+      image: 'onepanel/dl:0.17.0'
       volumeMounts:
         - mountPath: /mnt/data
           name: data
@@ -99,7 +81,7 @@ templates:
       workingDir: /mnt/src
     sidecars:
       - name: tensorboard
-        image: tensorflow/tensorflow:2.3.0
+        image: 'onepanel/dl:0.17.0'
         command: [ sh, -c ]
         env:
           - name: ONEPANEL_INTERACTIVE_SIDECAR
@@ -115,20 +97,22 @@ templates:
         - name: data
           path: /mnt/data/datasets/
           s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+            key: '{{workflow.parameters.cvat-annotation-path}}'
+        - name: models
+          path: /mnt/data/models/
+          optional: true
+          s3:
+            key: '{{workflow.parameters.cvat-finetune-checkpoint}}'
         - git:
-            repo: 'https://github.com/onepanelio/Mask_RCNN.git'
-            revision: 'no-boto'
+            repo: https://github.com/onepanelio/templates.git
           name: src
-          path: /mnt/src
+          path: /mnt/src/train
     name: tensorflow
     outputs:
       artifacts:
         - name: model
           optional: true
           path: /mnt/output
-          s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
 volumeClaimTemplates:
   - metadata:
       name: data
