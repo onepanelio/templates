@@ -15,7 +15,7 @@ def main(params):
 
     data_dir = params['dataset']
     model_dir = params['model_path']
-    checkpoint_dir = os.path.join(params['output_path'], 'checkpoint')
+    checkpoint_dir = os.path.join(params['output_path'], 'checkpoints')
     trained_model_dir = os.path.join(params['output_path'], 'model')
 
     directories = [data_dir, model_dir, checkpoint_dir, trained_model_dir]
