@@ -14,7 +14,7 @@ arguments:
 
     - name: cvat-num-classes
       displayName: Number of classes
-      hint: Number of classes + 1 for background. In CVAT, this parameter will be pre-populated.
+      hint: Number of classes. In CVAT, this parameter will be pre-populated.
       value: '11'
       visibility: internal
 
@@ -67,8 +67,7 @@ templates:
             --model=workflow_maskrcnn \
             --extras="{{workflow.parameters.hyperparameters}}"  \
             --ref_model_path="{{workflow.parameters.cvat-finetune-checkpoint}}"  \
-            --num_classes="{{workflow.parameters.cvat-num-classes}}"  \
-            --logs=/mnt/output
+            --num_classes="{{workflow.parameters.cvat-num-classes}}" 
       command:
         - sh
         - -c

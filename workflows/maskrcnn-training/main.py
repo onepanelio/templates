@@ -379,7 +379,7 @@ def preprocess_inputs(args):
 
     params = yaml.load(args.extras)
     params['steps_per_epoch'] = params.pop('num_steps')
-    params['num_classes'] = int(args.num_classes)
+    params['num_classes'] = int(args.num_classes) + 1
 
     # Check num epochs sanity
     if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
@@ -445,7 +445,7 @@ def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
         model.load_weights(model_path, by_name=True, exclude=[ "mrcnn_class_logits", "mrcnn_bbox_fc", "mrcnn_bbox", "mrcnn_mask"])
     else:
         model.load_weights(model_path, by_name=True)
-    return model, model_path
+    return model
 
 
 def extract_model(train_dataset, output_dir, config, params):
@@ -491,7 +491,7 @@ def main(args):
     config.display()
 
     # Create model
-    model, model_path = create_model(args.command, config, args.output, args.model, args.ref_model_path)
+    model = create_model(args.command, config, args.output, args.model, args.ref_model_path)
 
 
     # Train or evaluate
