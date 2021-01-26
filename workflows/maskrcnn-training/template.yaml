@@ -15,7 +15,7 @@ arguments:
     - name: cvat-num-classes
       displayName: Number of classes
       hint: Number of classes. In CVAT, this parameter will be pre-populated.
-      value: '11'
+      value: '10'
       visibility: internal
 
     - name: hyperparameters
