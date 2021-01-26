@@ -2341,7 +2341,7 @@ class MaskRCNN(object):
 
         train_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True,
                                          augmentation=augmentation), output_types=data_spec, output_shapes=data_shapes)
-        if len(DataGenerator(val_dataset, self.config, shuffle=True), output_types=data_spec, output_shapes=data_shapes) > 0 :
+        if len(DataGenerator(val_dataset, self.config)) > 0 :
             val_generator = tf.data.Dataset.from_generator(DataGenerator(val_dataset, self.config, shuffle=True), output_types=data_spec, output_shapes=data_shapes)
         else:
             val_generator = tf.data.Dataset.from_generator(DataGenerator(train_dataset, self.config, shuffle=True), output_types=data_spec, output_shapes=data_shapes)
