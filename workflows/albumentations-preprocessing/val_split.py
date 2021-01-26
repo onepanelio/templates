@@ -58,7 +58,7 @@ def split_dataset(dataset_name: str='instances_default.json', val_split: float=0
                 segmentations = new_annotation['segmentation']
                 new_annotation['segmentation'] = []
                 for segmentation in segmentations:
-                    if len(segmentation) != 8 and len(segmentation) % 2 == 1:
+                    if len(segmentation) != 8 and len(segmentation) % 2 == 0:
                         new_annotation['segmentation'].append(segmentation)
                 train_set['annotations'].append(new_annotation)
             old_filename = new_image['file_name'].split('/')[-1]
