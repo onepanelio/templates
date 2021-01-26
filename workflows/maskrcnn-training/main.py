@@ -383,8 +383,8 @@ def preprocess_inputs(args):
     # Check num epochs sanity
     if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
         params['stage-1-epochs'] = int(params['stage-1-epochs'])
-        params['stage-2-epochs'] = max(int(params['stage-1-epochs']), int(params['stage-2-epochs']))
-        params['stage-3-epochs'] = max(int(params['stage-3-epochs']), int(params['stage-2-epochs']))
+        params['stage-2-epochs'] = params['stage-1-epochs'] + int(params['stage-2-epochs'])
+        params['stage-3-epochs'] = params['stage-2-epochs'] + int(params['stage-3-epochs'])
     else:
         print('Num of epochs at each stage not provided, using default ones')
         params['stage-1-epochs'] = 1
