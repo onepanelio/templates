@@ -445,7 +445,7 @@ def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
         model.load_weights(model_path, by_name=True, exclude=[ "mrcnn_class_logits", "mrcnn_bbox_fc", "mrcnn_bbox", "mrcnn_mask"])
     else:
         model.load_weights(model_path, by_name=True)
-    return model, model_path
+    return model
 
 
 def extract_model(train_dataset, output_dir, config, params):
@@ -491,7 +491,7 @@ def main(args):
     config.display()
 
     # Create model
-    model, model_path = create_model(args.command, config, args.output, args.model, args.ref_model_path)
+    model = create_model(args.command, config, args.output, args.model, args.ref_model_path)
 
 
     # Train or evaluate
