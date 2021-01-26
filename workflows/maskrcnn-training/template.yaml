@@ -50,7 +50,7 @@ arguments:
       hint: Enter validation set size in percentage of full dataset. (0 - 100)
       
     - name: num-augmentation-cycles
-      value: 4
+      value: 1
       displayName: Number of augmentation cycles
       type: input.number
       visibility: public
