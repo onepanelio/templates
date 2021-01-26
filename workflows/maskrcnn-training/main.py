@@ -379,7 +379,7 @@ def preprocess_inputs(args):
 
     params = yaml.load(args.extras)
     params['steps_per_epoch'] = params.pop('num_steps')
-    params['num_classes'] = int(args.num_classes)
+    params['num_classes'] = int(args.num_classes) + 1
 
     # Check num epochs sanity
     if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:

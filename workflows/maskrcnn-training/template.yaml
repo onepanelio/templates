@@ -1,26 +1,20 @@
 arguments:
   parameters:
     - name: cvat-annotation-path
-      value: annotation-dump/sample_dataset
+      value: 'artifacts/{{workflow.namespace}}/annotations/'
       hint: Path to annotated data in default object storage. In CVAT, this parameter will be pre-populated.
       displayName: Dataset path
       visibility: internal
 
-    - name: cvat-output-path
-      value: workflow-data/output/sample_output
-      hint: Path to store output artifacts in default object storage. In CVAT, this parameter will be pre-populated.
-      displayName: Workflow output path
-      visibility: internal
-
     - name: cvat-finetune-checkpoint
       value: ''
-      hint: Select the last fine-tune checkpoint for this model. It may take up to 5 minutes for a recent checkpoint show here. Leave empty if this is the first time you're training this model.
+      hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
       displayName: Checkpoint path
       visibility: public
 
     - name: cvat-num-classes
       displayName: Number of classes
-      hint: Number of classes + 1 for background. In CVAT, this parameter will be pre-populated.
+      hint: Number of classes. In CVAT, this parameter will be pre-populated.
       value: '11'
       visibility: internal
 
@@ -38,7 +32,7 @@ arguments:
     - name: dump-format
       value: cvat_coco
       displayName: CVAT dump format
-      visibility: public
+      visibility: private
 
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
@@ -67,8 +61,7 @@ templates:
             --model=workflow_maskrcnn \
             --extras="{{workflow.parameters.hyperparameters}}"  \
             --ref_model_path="{{workflow.parameters.cvat-finetune-checkpoint}}"  \
-            --num_classes="{{workflow.parameters.cvat-num-classes}}"  \
-            --logs=/mnt/output
+            --num_classes="{{workflow.parameters.cvat-num-classes}}" 
       command:
         - sh
         - -c
@@ -97,7 +90,7 @@ templates:
         - name: data
           path: /mnt/data/datasets/
           s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+            key: '{{workflow.parameters.cvat-annotation-path}}'
         - name: models
           path: /mnt/data/models/
           optional: true
@@ -113,8 +106,6 @@ templates:
         - name: model
           optional: true
           path: /mnt/output
-          s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
 volumeClaimTemplates:
   - metadata:
       name: data
