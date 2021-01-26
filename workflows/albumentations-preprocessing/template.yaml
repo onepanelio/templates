@@ -1,15 +1,9 @@
 arguments:
   parameters:
     - name: cvat-annotation-path
-      value: annotation-dump/sample_dataset
+      value: 'artifacts/{{workflow.namespace}}/annotations/'
       displayName: Dataset path
-      hint: Path to annotated data (COCO format) in default object storage. In CVAT, this parameter will be pre-populated.
-      visibility: internal
-
-    - name: cvat-output-path
-      value: workflow-data/output/sample_output
-      hint: Path to store output artifacts in default object storage (i.e s3). In CVAT, this parameter will be pre-populated.
-      displayName: Workflow output path
+      hint: Path to annotated data in default object storage. In CVAT, this parameter will be pre-populated.
       visibility: internal
       
     - name: val-split
@@ -43,16 +37,6 @@ arguments:
       type: textarea.textarea
       hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
 
-    - name: preprocessing-image
-      value: tensorflow/tensorflow:2.4.0
-      displayName: TensorFlow image for preprocessing
-      visibility: internal
-      hint: Select the GPU image if you are running on a GPU node pool
-
-    - name: dump-format
-      value: cvat_coco
-      visibility: public
-
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
       name: preprocessing-node-pool
@@ -70,7 +54,7 @@ templates:
   - container:
       args:
         - |
-          pip install opencv-python albumentations tqdm pyyaml pycocotools && \
+          pip install pycocotools && \
           cd /mnt/src/preprocessing/workflows/albumentations-preprocessing && \
           python main.py \
             --data_aug_params="{{workflow.parameters.preprocessing-parameters}}" \
@@ -79,7 +63,7 @@ templates:
       command:
         - sh
         - -c
-      image: '{{workflow.parameters.preprocessing-image}}'
+      image: 'onepanel/dl:0.17.0'
       volumeMounts:
         - mountPath: /mnt/data
           name: data
@@ -87,13 +71,13 @@ templates:
           name: output
       workingDir: /mnt/src
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.preprocessing-node-pool}}'
+      node.kubernetes.io/instance-type: '{{workflow.parameters.preprocessing-node-pool}}'
     inputs:
       artifacts:
         - name: data
           path: /mnt/data/datasets/
           s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-annotation-path}}'
+            key: '{{workflow.parameters.cvat-annotation-path}}'
         - git:
             repo: https://github.com/onepanelio/templates.git
           name: src
@@ -104,8 +88,6 @@ templates:
         - name: processed-data
           optional: true
           path: /mnt/output
-          s3:
-            key: '{{workflow.namespace}}/{{workflow.parameters.cvat-output-path}}/{{workflow.name}}'
 volumeClaimTemplates:
   - metadata:
       name: data
