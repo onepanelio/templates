@@ -100,7 +100,6 @@ class OnepanelDataset(utils.Dataset):
 
         # Add images
         for i in image_ids:
-            print(coco.imgs[i])
             self.add_image(
                 "coco", image_id=i,
                 path=os.path.join(image_dir, os.path.basename(coco.imgs[i]['file_name'])),
