@@ -79,74 +79,14 @@ templates:
       tasks:
         - name: preprocessing
           template: preprocessing
-          when: "({{workflow.parameters.val-split}} > 0) || ({{workflow.parameters.num-augmentation-cycles}} > 0)"
-        - name: train-model-pre
-          template: tensorflow-pre
+        - name: train-model
+          template: tensorflow
           dependencies: [preprocessing]
-          when: "{{tasks.preprocessing.status}} == Succeeded"
           arguments:
             artifacts:
               - name: data
                 from: "{{tasks.preprocessing.outputs.artifacts.processed-data}}"
-        - name: train-model
-          template: tensorflow
-          dependencies: [preprocessing]
-          when: "{{tasks.preprocessing.status}} == Skipped"
     name: main
-  - container:
-      args:
-        - |
-          pip install pycocotools scikit-image==0.16.2 && \
-          cd /mnt/src/train/workflows/maskrcnn-training && \
-          python -u main.py train --dataset=/mnt/data/datasets \
-            --model=workflow_maskrcnn \
-            --extras="{{workflow.parameters.hyperparameters}}"  \
-            --ref_model_path="{{workflow.parameters.cvat-finetune-checkpoint}}"  \
-            --num_classes="{{workflow.parameters.cvat-num-classes}}" 
-      command:
-        - sh
-        - -c
-      image: 'onepanel/dl:0.17.0'
-      volumeMounts:
-        - mountPath: /mnt/data
-          name: data
-        - mountPath: /mnt/output
-          name: output
-      workingDir: /mnt/src
-    sidecars:
-      - name: tensorboard
-        image: 'onepanel/dl:0.17.0'
-        command: [ sh, -c ]
-        env:
-          - name: ONEPANEL_INTERACTIVE_SIDECAR
-            value: 'true'
-        args: [ "tensorboard --logdir /mnt/output/" ]
-        ports:
-          - containerPort: 6006
-            name: tensorboard
-    nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
-    inputs:
-      artifacts:
-        - name: data
-          path: /mnt/data/datasets/
-          s3:
-            key: '{{workflow.parameters.cvat-annotation-path}}'
-        - name: models
-          path: /mnt/data/models/
-          optional: true
-          s3:
-            key: '{{workflow.parameters.cvat-finetune-checkpoint}}'
-        - git:
-            repo: https://github.com/onepanelio/templates.git
-          name: src
-          path: /mnt/src/train
-    name: tensorflow
-    outputs:
-      artifacts:
-        - name: model
-          optional: true
-          path: /mnt/output
   - container:
       args:
         - |
@@ -195,7 +135,7 @@ templates:
             repo: https://github.com/onepanelio/templates.git
           name: src
           path: /mnt/src/train
-    name: tensorflow-pre
+    name: tensorflow
     outputs:
       artifacts:
         - name: model
