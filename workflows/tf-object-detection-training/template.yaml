@@ -38,7 +38,7 @@ arguments:
 
     - name: cvat-finetune-checkpoint
       value: ''
-      hint: Select the last fine-tune checkpoint for this model. It may take up to 5 minutes for a recent checkpoint show here. Leave empty if this is the first time you're training this model.
+      hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
       displayName: Checkpoint path
       visibility: public
 
@@ -110,8 +110,8 @@ templates:
       tasks:
         - name: preprocessing
           template: preprocessing
-        - name: train-model-pre
-          template: tensorflow-pre
+        - name: train-model
+          template: tensorflow
           dependencies: [preprocessing]
           arguments:
             artifacts:
@@ -151,7 +151,7 @@ templates:
           name: output
       workingDir: /mnt/src
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+      node.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     inputs:
       artifacts:
         - name: data
@@ -170,7 +170,7 @@ templates:
             repo: https://github.com/onepanelio/templates.git
           name: tsrc
           path: /mnt/src/train
-    name: tensorflow-pre
+    name: tensorflow
     outputs:
       artifacts:
         - name: model
@@ -213,7 +213,7 @@ templates:
           name: processed-data
       workingDir: /mnt/src
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+      node.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     inputs:
       artifacts:
         - name: data

@@ -116,12 +116,12 @@ templates:
         env:
           - name: ONEPANEL_INTERACTIVE_SIDECAR
             value: 'true'
-        args: [ "tensorboard --logdir /mnt/output/" ]
+        args: [ "tensorboard --logdir /mnt/output/tensorboard" ]
         ports:
           - containerPort: 6006
             name: tensorboard
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+      node.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     inputs:
       artifacts:
         - name: data
@@ -161,7 +161,7 @@ templates:
           name: processed-data
       workingDir: /mnt/src
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+      node.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     inputs:
       artifacts:
         - name: data
