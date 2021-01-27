@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument('--input_folder', default='/mnt/data/datasets/')
     parser.add_argument('--output_folder', default='/mnt/output/')
     parser.add_argument('--annotations_filename', default='instances_default.json')
-    parser.add_argument('--val_split', default=0.2, type=float)
+    parser.add_argument('--val_split', default=20, type=float)
     parser.add_argument('--aug_steps', default=1, type=int)
     parser.add_argument('--data_aug_params', default='')
     parser.add_argument('--format', default=None)

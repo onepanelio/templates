@@ -20,13 +20,15 @@ def data_augmentation(aug_params: str, dataset: dict, data_folder: str='', aug_s
                 annotations = get_annotation_from_image_id(dataset, image_id)
                 bboxes = [annotation['bbox'].copy() for annotation in annotations]
                 labels = [annotation['category_id'] for annotation in annotations]
+                keypoints, keypoint_map = polygon2keypoint(annotations)
                 img_path = data_folder + 'images/' + image_data['file_name'].split('/')[-1]
                 img_sufix = img_path.split('.')[-1]
                 img = load_image(img_path)
-                transformed = transform(image=img, bboxes=bboxes, class_labels=labels)
+                transformed = transform(image=img, bboxes=bboxes, class_labels=labels, keypoints=keypoints)
                 transformed_image = transformed['image']
                 transformed_bboxes = transformed['bboxes']
-                if len(transformed_bboxes) == len(bboxes):
+                transformed_keypoints = transformed['keypoints']
+                if len(transformed_bboxes) == len(bboxes) and len(transformed_keypoints) == len(keypoints):
                     h, w, _ = transformed_image.shape
                     new_img = copy.deepcopy(image_data)
                     new_img['id'] = len(aug_dataset['images'])
@@ -38,6 +40,7 @@ def data_augmentation(aug_params: str, dataset: dict, data_folder: str='', aug_s
                         annotation['bbox'] = transformed_bboxes[idx]
                         annotation['image_id'] = new_img['id']
                         annotation['id'] = len(aug_dataset['annotations'])
+                        annotation['segmentation'] = keypoint2polygon(transformed_keypoints, keypoint_map, idx)
                         aug_dataset['annotations'].append(annotation)
                     new_img_path = data_folder + 'images/' + new_img['file_name']
                     save_image(new_img_path, transformed_image)
@@ -54,5 +57,30 @@ def create_transformation(aug_params: str) -> Compose:
             transformation_list.append(members_dict[transformation](**params_dict[transformation]))
         else:
             raise ValueError('"{}" is not a valid transformation, please refer to: https://albumentations.ai/docs/api_reference/augmentations/transforms/'.format(transformation))
-    transform =  A.Compose(transformation_list, A.BboxParams(format='coco', label_fields=['class_labels'], min_visibility=0.1))
+    transform =  A.Compose(
+        transformation_list, 
+        bbox_params=A.BboxParams(format='coco', label_fields=['class_labels'], min_visibility=0.1), 
+        keypoint_params=A.KeypointParams(format='xy', remove_invisible=True)
+    )
     return transform
+
+def polygon2keypoint(segmentations: list) -> list:
+    keypoints = []
+    keypoints_map = []
+    counter = 0
+    for segmentation in segmentations:
+        keypoint_map = []
+        if len(segmentation['segmentation']) == 1:
+            for idx in range(len(segmentation['segmentation'][0])//2):
+                keypoints.append([segmentation['segmentation'][0][2*idx], segmentation['segmentation'][0][2*idx+1]])
+                keypoint_map.append(counter)
+                counter = counter + 1
+            keypoints_map.append(keypoint_map)
+    return keypoints, keypoints_map
+
+def keypoint2polygon(keypoints: list, keypoint_map: list, idx: int) -> list:
+    segmentation = []
+    for map_idx in keypoint_map[idx]:
+        segmentation.append(keypoints[map_idx][0])
+        segmentation.append(keypoints[map_idx][1])
+    return [segmentation]
