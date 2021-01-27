@@ -1,3 +1,4 @@
+import os
 import argparse
 from val_split import split_dataset
 from data_augmentation import data_augmentation
@@ -16,7 +17,7 @@ def main(args: argparse.Namespace) -> int:
     data_augmentation(
         args.data_aug_params, 
         train_set, 
-        data_folder=args.output_folder+'train_set/',
+        data_folder=os.path.join(args.output_folder, 'train_set/'),
         aug_steps= args.aug_steps
     )
 
