@@ -428,8 +428,16 @@ def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
                 print("Downloading COCO pretrained weights")
                 urllib.request.urlretrieve("https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5","/mnt/data/models/mask_rcnn_coco.h5")
             model_path = "/mnt/data/models/mask_rcnn_coco.h5"
-        else:
+        elif os.path.isfile("/mnt/data/models/output/model/onepanel_trained_model.h5"):
+            model_path = "/mnt/data/models/output/model/onepanel_trained_model.h5"
+        elif os.path.isfile("/mnt/data/models/model/onepanel_trained_model.h5"):
+            model_path = "/mnt/data/models/model/onepanel_trained_model.h5"
+        elif os.path.isfile("/mnt/data/models/onepanel_trained_model.h5"):
             model_path = "/mnt/data/models/onepanel_trained_model.h5"
+        elif ref_model_path.split('.')[-1] == "h5" and os.path.isfile(os.path.join("/mnt/data/models/", ref_model_path.split('/')[-1])):
+            model_path = os.path.join("/mnt/data/models/", ref_model_path.split('/')[-1])
+        else:
+                raise ValueError("Not valid checkpoint found")
         print("Model found: {}".format(model_path))
     else:
         if os.path.isfile(selected_model):

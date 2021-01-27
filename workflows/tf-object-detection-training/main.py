@@ -43,6 +43,8 @@ def main(params):
         files = os.listdir(files_dir)
         for f in files:
             shutil.move(os.path.join(files_dir , f),model_dir)
+    elif os.path.isfile(os.path.join(model_dir , 'output/model/model.ckpt.index')):
+        model_dir = os.path.join(model_dir , 'output/model')
     elif os.path.isfile(os.path.join(model_dir , 'model/model.ckpt.index')):
         model_dir = os.path.join(model_dir , 'model')
     elif not os.path.isfile(os.path.join(model_dir , 'model.ckpt.index')):
