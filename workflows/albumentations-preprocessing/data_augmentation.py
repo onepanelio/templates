@@ -80,7 +80,11 @@ def polygon2keypoint(segmentations: list) -> list:
 
 def keypoint2polygon(keypoints: list, keypoint_map: list, idx: int) -> list:
     segmentation = []
-    for map_idx in keypoint_map[idx]:
-        segmentation.append(keypoints[map_idx][0])
-        segmentation.append(keypoints[map_idx][1])
-    return [segmentation]
+    if len(keypoint_map) > idx:
+        for map_idx in keypoint_map[idx]:
+            segmentation.append(keypoints[map_idx][0])
+            segmentation.append(keypoints[map_idx][1])
+    if len(segmentation) > 8:
+        return [segmentation]
+    else:
+        return []
