@@ -422,7 +422,7 @@ def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
         print("Executed from Onepanel workflow")
         if not os.path.exists("/mnt/data/models"):
             os.makedirs("/mnt/data/models")
-        if ref_model_path == '' or not os.path.isfile("/mnt/data/models/onepanel_trained_model.h5"):
+        if ref_model_path == '':
             #download model
             if not os.path.isfile("/mnt/data/models/mask_rcnn_coco.h5"):
                 print("Downloading COCO pretrained weights")
