@@ -48,7 +48,7 @@ def main(params):
     elif os.path.isfile(os.path.join(model_dir , 'model/model.ckpt.index')):
         model_dir = os.path.join(model_dir , 'model')
     elif not os.path.isfile(os.path.join(model_dir , 'model.ckpt.index')):
-        raise ValueError("Not valid checkpoint found")
+        raise ValueError("No valid checkpoint found")
 
     if params['from_preprocessing']:
         train_set = 'tfrecord/train.tfrecord*'
@@ -103,7 +103,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # parse parameters
     # sample: epochs=100;num_classes=1
-    params = yaml.load(args.extras, Loader=FullLoader)
+    try:
+        params = yaml.load(args.extras, Loader=FullLoader)
+    except:
+        raise ValueError('Parameters must have a valid YAML format')
+    if not isinstance(params, dict):
+        raise TypeError('Parameters must have a valid YAML format')
     params.update(vars(args))
     params.pop('extras')
     print('Processed parameters: ', params)

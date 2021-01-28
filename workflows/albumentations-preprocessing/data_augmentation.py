@@ -49,7 +49,12 @@ def data_augmentation(aug_params: str, dataset: dict, data_folder: str='', aug_s
         print('Done')
 
 def create_transformation(aug_params: str) -> Compose:
-    params_dict = yaml.load(aug_params, Loader=FullLoader)
+    try: 
+        params_dict = yaml.load(aug_params, Loader=FullLoader)
+    except:
+        raise ValueError('Parameters must have a valid YAML format')
+    if not isinstance(params_dict, dict):
+        raise TypeError('Parameters must have a valid YAML format')
     members_dict = {a:b for (a,b) in getmembers(A)}
     transformation_list = []
     for transformation in params_dict.keys():
