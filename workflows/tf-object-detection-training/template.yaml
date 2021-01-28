@@ -2,7 +2,7 @@ arguments:
   parameters:
     - name: cvat-annotation-path
       value: 'artifacts/{{workflow.namespace}}/annotations/'
-      hint: Path to annotated data (TFRecord format) in default object storage. In CVAT, this parameter will be pre-populated.
+      hint: Path to annotated data (COCO format) in default object storage. In CVAT, this parameter will be pre-populated.
       displayName: Dataset path
       visibility: internal
 
