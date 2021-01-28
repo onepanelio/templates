@@ -2,15 +2,40 @@ arguments:
   parameters:
     - name: cvat-annotation-path
       value: 'artifacts/{{workflow.namespace}}/annotations/'
-      hint: Path to annotated data in default object storage. In CVAT, this parameter will be pre-populated.
+      hint: Path to annotated data (COCO format) in default object storage. In CVAT, this parameter will be pre-populated.
       displayName: Dataset path
       visibility: internal
 
-    - name: cvat-finetune-checkpoint
-      value: ''
-      hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
-      displayName: Checkpoint path
+    - name: val-split
+      value: 10
+      displayName: Validation split size
+      type: input.number
       visibility: public
+      hint: Enter validation set size in percentage of full dataset. (0 - 100)
+
+    - name: num-augmentation-cycles
+      value: 1
+      displayName: Number of augmentation cycles
+      type: input.number
+      visibility: public
+      hint: Number of augmentation cycles, zero means no data augmentation
+
+    - name: preprocessing-parameters
+      value: |-
+        RandomBrightnessContrast:
+            p: 0.2
+        GaussianBlur:
+            p: 0.3
+        GaussNoise:
+            p: 0.4
+        HorizontalFlip:
+            p: 0.5
+        VerticalFlip:
+            p: 0.3
+      displayName: Preprocessing parameters
+      visibility: public
+      type: textarea.textarea
+      hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
 
     - name: cvat-num-classes
       displayName: Number of classes
@@ -34,6 +59,12 @@ arguments:
       displayName: CVAT dump format
       visibility: private
 
+    - name: cvat-finetune-checkpoint
+      value: ''
+      hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
+      displayName: Checkpoint path
+      visibility: public
+
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
       type: select.nodepool
@@ -41,37 +72,6 @@ arguments:
       name: sys-node-pool
       value: default
       required: true
-      
-    - name: val-split
-      value: 10
-      displayName: Validation split size
-      type: input.number
-      visibility: public
-      hint: Enter validation set size in percentage of full dataset. (0 - 100)
-      
-    - name: num-augmentation-cycles
-      value: 1
-      displayName: Number of augmentation cycles
-      type: input.number
-      visibility: public
-      hint: Number of augmentation cycles, zero means no data augmentation
-      
-    - name: preprocessing-parameters
-      value: |-
-        RandomBrightnessContrast:
-            p: 0.2
-        GaussianBlur:
-            p: 0.3
-        GaussNoise:
-            p: 0.4
-        HorizontalFlip:
-            p: 0.5
-        VerticalFlip:
-            p: 0.3
-      displayName: Preprocessing parameters
-      visibility: public
-      type: textarea.textarea
-      hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
 
 entrypoint: main
 templates:

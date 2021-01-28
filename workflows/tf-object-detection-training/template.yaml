@@ -5,6 +5,37 @@ arguments:
       hint: Path to annotated data in default object storage. In CVAT, this parameter will be pre-populated.
       displayName: Dataset path
       visibility: internal
+
+    - name: val-split
+      value: 10
+      displayName: Validation split size
+      type: input.number
+      visibility: public
+      hint: Enter validation set size in percentage of full dataset. (0 - 100)
+      
+    - name: num-augmentation-cycles
+      value: 1
+      displayName: Number of augmentation cycles
+      type: input.number
+      visibility: public
+      hint: Number of augmentation cycles, zero means no data augmentation
+      
+    - name: preprocessing-parameters
+      value: |-
+        RandomBrightnessContrast:
+            p: 0.2
+        GaussianBlur:
+            p: 0.3
+        GaussNoise:
+            p: 0.4
+        HorizontalFlip:
+            p: 0.5
+        VerticalFlip:
+            p: 0.3
+      displayName: Preprocessing parameters
+      visibility: public
+      type: textarea.textarea
+      hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
       
     - name: cvat-model
       value: frcnn-res50-coco
@@ -28,6 +59,12 @@ arguments:
         - name: 'SSDLite MobileNet-COCO'
           value: ssdlite-mobilenet-coco
 
+    - name: cvat-num-classes
+      value: '10'
+      hint: Number of classes. In CVAT, this parameter will be pre-populated.
+      displayName: Number of classes
+      visibility: internal
+
     - name: hyperparameters
       value: |-
         num_steps: 10000
@@ -36,17 +73,16 @@ arguments:
       type: textarea.textarea
       hint: 'See <a href="https://docs.onepanel.ai/docs/getting-started/use-cases/computervision/annotation/cvat/cvat_annotation_model/#tfod-hyperparameters" target="_blank">documentation</a> for more information on parameters.'
 
+    - name: dump-format
+      value: cvat_coco
+      displayName: CVAT dump format
+      visibility: private
+
     - name: cvat-finetune-checkpoint
       value: ''
       hint: Path to the last fine-tune checkpoint for this model in default object storage. Leave empty if this is the first time you're training this model.
       displayName: Checkpoint path
       visibility: public
-
-    - name: cvat-num-classes
-      value: '10'
-      hint: Number of classes. In CVAT, this parameter will be pre-populated.
-      displayName: Number of classes
-      visibility: internal
 
     - name: tf-image
       value: tensorflow/tensorflow:1.13.1-py3
@@ -60,11 +96,6 @@ arguments:
         - name: 'TensorFlow 1.13.1 GPU Image'
           value: 'tensorflow/tensorflow:1.13.1-gpu-py3'
 
-    - name: dump-format
-      value: cvat_coco
-      displayName: CVAT dump format
-      visibility: private
-
     - displayName: Node pool
       hint: Name of node pool or group to run this workflow task
       type: select.nodepool
@@ -72,37 +103,6 @@ arguments:
       value: default
       visibility: public
       required: true
-      
-    - name: val-split
-      value: 0
-      displayName: Validation split size
-      type: input.number
-      visibility: public
-      hint: Enter validation set size in percentage of full dataset. (0 - 100)
-      
-    - name: num-augmentation-cycles
-      value: 0
-      displayName: Number of augmentation cycles
-      type: input.number
-      visibility: public
-      hint: Number of augmentation cycles, zero means no data augmentation
-      
-    - name: preprocessing-parameters
-      value: |-
-        RandomBrightnessContrast:
-            p: 0.2
-        GaussianBlur:
-            p: 0.3
-        GaussNoise:
-            p: 0.4
-        HorizontalFlip:
-            p: 0.5
-        VerticalFlip:
-            p: 0.3
-      displayName: Preprocessing parameters
-      visibility: public
-      type: textarea.textarea
-      hint: 'See <a href="https://albumentations.ai/docs/api_reference/augmentations/transforms/" target="_blank">documentation</a> for more information on parameters.'
 
 entrypoint: main
 templates:
