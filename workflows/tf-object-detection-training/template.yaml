@@ -138,7 +138,7 @@ templates:
             --extras="{{workflow.parameters.hyperparameters}}" \
             --model="{{workflow.parameters.cvat-model}}" \
             --num_classes="{{workflow.parameters.cvat-num-classes}}" \
-            --sys_finetune_checkpoint={{workflow.parameters.cvat-finetune-checkpoint}} \
+            --sys_finetune_checkpoint="{{workflow.parameters.cvat-finetune-checkpoint}}" \
             --from_preprocessing=True
       command:
         - sh
