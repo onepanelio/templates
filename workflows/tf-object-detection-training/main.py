@@ -103,7 +103,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # parse parameters
     # sample: epochs=100;num_classes=1
-    params = yaml.load(args.extras, Loader=FullLoader)
+    try:
+        params = yaml.load(args.extras, Loader=FullLoader)
+    except:
+        raise ValueError('Parameters must have a valid YAML format')
+    if not isinstance(params, dict):
+        raise TypeError('Parameters must have a valid YAML format')
     params.update(vars(args))
     params.pop('extras')
     print('Processed parameters: ', params)

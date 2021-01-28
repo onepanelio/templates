@@ -172,7 +172,10 @@ class OnepanelDataset(utils.Dataset):
         if isinstance(segm, list):
             # polygon -- a single object might consist of multiple parts
             # we merge all parts into one mask rle code
-            rles = maskUtils.frPyObjects(segm, height, width)
+            try:
+                rles = maskUtils.frPyObjects(segm, height, width)
+            except IndexError:
+                raise ValueError('Segmentations not found in annotations. Make sure to use polygons for annotations')
             rle = maskUtils.merge(rles)
         elif isinstance(segm['counts'], list):
             # uncompressed RLE
@@ -375,8 +378,12 @@ def preprocess_inputs(args):
     print("Logs: ", args.output)
     print("Num Classes: ", args.num_classes)
     print("Extras: ", args.extras)
-
-    params = yaml.load(args.extras)
+    try:
+        params = yaml.load(args.extras)
+    except:
+        raise ValueError('Parameters must have a valid YAML format')
+    if not isinstance(params, dict):
+        raise TypeError('Parameters must have a valid YAML format')
     params['steps_per_epoch'] = params.pop('num_steps')
     params['num_classes'] = int(args.num_classes) + 1
 
