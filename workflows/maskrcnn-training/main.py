@@ -437,13 +437,13 @@ def create_model(command, config, logs_dir, selected_model, ref_model_path=''):
         elif ref_model_path.split('.')[-1] == "h5" and os.path.isfile(os.path.join("/mnt/data/models/", ref_model_path.split('/')[-1])):
             model_path = os.path.join("/mnt/data/models/", ref_model_path.split('/')[-1])
         else:
-                raise ValueError("Not valid checkpoint found")
+                raise ValueError("No valid checkpoint found")
         print("Model found: {}".format(model_path))
     else:
         if os.path.isfile(selected_model):
             model_path = selected_model
         else:
-            raise ValueError('Not a valid model use "model" flag with a valid model for custom pretrained model')
+            raise ValueError('Provided model is not valid, use "model" flag with a valid model for custom pretrained model')
 
     
     # Load weights
