@@ -168,6 +168,7 @@ templates:
           path: /mnt/src/tf
         - git:
             repo: https://github.com/onepanelio/templates.git
+            revision: v0.18.0
           name: tsrc
           path: /mnt/src/train
     name: tensorflow
@@ -222,6 +223,7 @@ templates:
             key: '{{workflow.parameters.cvat-annotation-path}}'
         - git:
             repo: https://github.com/onepanelio/templates.git
+            revision: v0.18.0
           name: src
           path: /mnt/src/preprocessing
     name: preprocessing
