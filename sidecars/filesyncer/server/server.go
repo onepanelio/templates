@@ -89,7 +89,21 @@ func sync() http.Handler {
 		go s3.Sync(params)()
 
 		w.Header().Set("content-type", "application/json")
-		io.WriteString(w, "Sync command sent")
+
+		result := struct {
+			Status string
+			Message string
+		} {
+			Status: "OK",
+			Message: "Sync command sent",
+		}
+
+		resultBytes, err := json.Marshal(result)
+		if err != nil {
+			return
+		}
+
+		io.WriteString(w, string(resultBytes))
 	})
 }
 
