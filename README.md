@@ -25,6 +25,12 @@ Workflow Templates consist of YAML definitions and Docker images that define a D
 ### Workspace Templates
 Workspace Templates consist of YAML definitions and Docker images that define stateful instances like JupyterLab, CVAT and any other IDE.
 
+- [CVAT](workspaces/cvat) - An interactive video and image annotation tool for computer vision.
+- [JupyterLab](workspaces/jupyterlab) - An extensible environment for interactive and reproducible computing, based on Jupyter Notebook.
+- [Eclipse Theia](workspaces/theia) - An extensible platform to develop multi-language cloud and desktop IDEs with state-of-the-art web technologies.
+- [Ubuntu VNC](workspaces/vnc) (alpha) - A full Ubuntu instance accessible in your web browser.
+- [Visual Studio Code](workspaces/vscode) - A lightweight but powerful source code editor which has support for just about everything. 
+
 ### Sidecars
 Sidecars are components that extend your Workspace or Workflow Tasks.
 
