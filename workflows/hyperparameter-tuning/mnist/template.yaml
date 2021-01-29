@@ -73,6 +73,15 @@ templates:
       tasks:
         - name: hyperparameter-tuning
           template: hyperparameter-tuning
+        - name: metrics-writer
+          template: metrics-writer
+          dependencies: [hyperparameter-tuning]
+          arguments:
+            # Use sys-metrics artifact output from hyperparameter-tuning Task
+            # This writes the best metrics to the Workflow
+            artifacts:
+              - name: sys-metrics
+                from: "{{tasks.hyperparameter-tuning.outputs.artifacts.sys-metrics}}"
   - name: hyperparameter-tuning
     inputs:
       artifacts:
@@ -115,7 +124,7 @@ templates:
         - name: hyperparamtuning-output
           mountPath: /mnt/output
     nodeSelector:
-      beta.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
+      node.kubernetes.io/instance-type: '{{workflow.parameters.sys-node-pool}}'
     sidecars:
       - name: nni-web-ui
         image: onepanel/nni-web-ui:0.17.0
@@ -139,6 +148,25 @@ templates:
         ports:
           - containerPort: 6006
             name: tensorboard
+  # Use the metrics-writer tasks to write best metrics to Workflow
+  - name: metrics-writer
+    inputs:
+      artifacts:
+      - name: sys-metrics
+        path: /tmp/sys-metrics.json
+      - git:
+          repo: https://github.com/onepanelio/templates.git
+          revision: v0.18.0
+        name: src
+        path: /mnt/src
+    container:
+      image: onepanel/python-sdk:v0.16.0
+      command:
+        - python
+        - -u
+      args:
+        - /mnt/src/tasks/metrics-writer/main.py
+        - --from_file=/tmp/sys-metrics.json
 
 # [CHANGE] Volumes that will mount to /mnt/data (annotated data) and /mnt/output (models, checkpoints, logs)
 # Update this depending on your annotation data, model, checkpoint, logs, etc. sizes
@@ -158,49 +186,3 @@ volumeClaimTemplates:
       resources:
         requests:
           storage: 20Gi
-
-  - name: workflow-metrics-writer
-    inputs:
-      artifacts:
-        - name: best-metrics
-          path: /tmp/sys-metrics.json
-    script:
-      image: onepanel/python-sdk:v0.16.0
-      command: [python, '-u']
-      source: |
-        import os
-        import json
-
-        import onepanel.core.api
-        from onepanel.core.api.models.metric import Metric
-        from onepanel.core.api.rest import ApiException
-        from onepanel.core.api.models import Parameter
-
-        # Load Task A metrics
-        with open('/tmp/sys-metrics.json') as f:
-            metrics = json.load(f)
-
-        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
-            token = f.read()
-
-        # Configure API authorization
-        configuration = onepanel.core.api.Configuration(
-            host = os.getenv('ONEPANEL_API_URL'),
-            api_key = {
-                'authorization': token
-            }
-        )
-        configuration.api_key_prefix['authorization'] = 'Bearer'
-
-        # Call SDK method to save metrics
-        with onepanel.core.api.ApiClient(configuration) as api_client:
-            api_instance = onepanel.core.api.WorkflowServiceApi(api_client)
-            namespace = '{{workflow.namespace}}'
-            uid = '{{workflow.name}}'
-            body = onepanel.core.api.AddWorkflowExecutionsMetricsRequest()
-            body.metrics = metrics
-            try:
-                api_response = api_instance.add_workflow_execution_metrics(namespace, uid, body)
-                print('Metrics added.')
-            except ApiException as e:
-                print("Exception when calling WorkflowServiceApi->add_workflow_execution_metrics: %s\n" % e)
