@@ -39,7 +39,7 @@ templates:
         path: /tmp/sys-metrics.json
       - git:
           repo: https://github.com/onepanelio/templates.git
-          revision: feat/fileserver
+          revision: v0.18.0
         name: src
         path: /mnt/src
     container:
