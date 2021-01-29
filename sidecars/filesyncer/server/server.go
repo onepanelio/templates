@@ -91,10 +91,8 @@ func sync() http.Handler {
 		w.Header().Set("content-type", "application/json")
 
 		result := struct {
-			Status string
 			Message string
 		} {
-			Status: "OK",
 			Message: "Sync command sent",
 		}
 
