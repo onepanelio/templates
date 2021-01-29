@@ -84,8 +84,6 @@ containers:
     volumeMounts:
       - name: share
         mountPath: /share
-      - name: cvat-data
-        mountPath: /cvat
       - name: sys-namespace-config
         mountPath: /etc/onepanel
         readOnly: true
