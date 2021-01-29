@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/justinas/alice"
 	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
 	"github.com/onepanelio/templates/sidecars/filesyncer/util"
 )
@@ -21,16 +22,18 @@ type Config struct {
 
 // routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
 // 405 is returned if it is neither a GET nor a PUT
-func routeSyncStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func syncStatus() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	if r.Method == http.MethodGet {
-		getSyncStatus(w, r)
-	} else if r.Method == http.MethodPut {
-		putSyncStatus(w, r)
-	} else {
-		w.WriteHeader(http.StatusMethodNotAllowed) // not allowed
-	}
+		if r.Method == http.MethodGet {
+			getSyncStatus(w, r)
+		} else if r.Method == http.MethodPut {
+			putSyncStatus(w, r)
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed) // not allowed
+		}
+	})
 }
 
 // getSyncStatus returns the util.Status in JSON form
@@ -66,34 +69,28 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 	getSyncStatus(w, r)
 }
 
-func sync(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func sync() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			log.Printf("[error] sync request failed: only POST or OPTIONS methods are allowed allowed\n")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
 
-	if r.Method == http.MethodOptions {
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+		decoder := json.NewDecoder(r.Body)
+		var params s3.SyncParameters
+		err := decoder.Decode(&params)
+		if err != nil {
+			log.Printf("[error] sync request failed: %s\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-	if r.Method != http.MethodPost {
-		log.Printf("[error] sync request failed: only POST/OPTIONS method is allowed\n")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+		go s3.Sync(params)()
 
-	decoder := json.NewDecoder(r.Body)
-	var params s3.SyncParameters
-	err := decoder.Decode(&params)
-	if err != nil {
-		log.Printf("[error] sync request failed: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	go s3.Sync(params)()
-
-	w.Header().Set("content-type", "application/json")
-	io.WriteString(w, "Sync command sent")
+		w.Header().Set("content-type", "application/json")
+		io.WriteString(w, "Sync command sent")
+	})
 }
 
 func handleUnsupportedEndpoint(config Config) http.HandlerFunc {
@@ -112,9 +109,10 @@ func handleUnsupportedEndpoint(config Config) http.HandlerFunc {
 // StartServer starts a server that provides information about the file sync status.
 func StartServer(config Config) {
 	mux := http.NewServeMux()
-	mux.HandleFunc(config.URLPrefix+"/api/status", routeSyncStatus)
-	mux.HandleFunc(config.URLPrefix+"/api/sync", sync)
-	mux.HandleFunc("/", handleUnsupportedEndpoint(config))
+	chain := alice.New(corsHandler)
+	mux.Handle(config.URLPrefix+"/api/status", chain.Then(syncStatus()))
+	mux.Handle(config.URLPrefix+"/api/sync", chain.Then(sync()))
+	mux.Handle("/", handleUnsupportedEndpoint(config))
 
 	fmt.Printf("Starting server at %s. Prefix: %v\n", config.URL, config.URLPrefix)
 	err := http.ListenAndServe(config.URL, mux)
