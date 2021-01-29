@@ -69,8 +69,14 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 func sync(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	if r.Method != http.MethodPost {
-		log.Printf("[error] sync request failed: only POST method is allowed\n")
+		log.Printf("[error] sync request failed: only POST/OPTIONS method is allowed\n")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
