@@ -27,8 +27,8 @@ def main(args):
     # Call SDK method to save metrics
     with onepanel.core.api.ApiClient(configuration) as api_client:
         api_instance = onepanel.core.api.WorkflowServiceApi(api_client)
-        namespace = args.workflow_name
-        uid = args.workflow_namespace
+        namespace = os.getenv('ONEPANEL_RESOURCE_NAMESPACE')
+        uid = os.getenv('ONEPANEL_RESOURCE_UID')
         body = onepanel.core.api.AddWorkflowExecutionsMetricsRequest()
         body.metrics = metrics
         try:
@@ -40,7 +40,5 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--from_file', help='JSON file containing metrics.', required=True)
-    parser.add_argument('--workflow_name', help='Workflow name', required=True)
-    parser.add_argument('--workflow_namespace', help='Workflow namespace', required=True)
 
     main(parser.parse_args())
