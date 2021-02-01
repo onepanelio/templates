@@ -77,8 +77,8 @@ class OnepanelDataset(utils.Dataset):
         dataset_dir: The root directory of the dataset in MS COCO format.
         """
 
-        coco = COCO("{}/annotations/instances_default.json".format(dataset_dir))
-        image_dir = "{}/images/".format(dataset_dir)
+        coco = COCO(os.path.join(dataset_dir, "annotations/instances_default.json"))
+        image_dir = os.path.join(dataset_dir, "images/")
 
         # Load all classes or a subset?
         class_ids = sorted(coco.getCatIds())
