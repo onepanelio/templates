@@ -171,7 +171,11 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(model_params['schedule_step_2'])
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].learning_rate = float(model_params['schedule_lr_2'])
         pipeline_config.train_config.optimizer.momentum_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
-        pipeline_config.train_config.batch_size = int(model_params['num_clones'])
+        if int(model_params['batch_size']) <= 1:
+            pipeline_config.train_config.batch_size = int(model_params['num_clones'])
+        else:
+            pipeline_config.train_config.batch_size = int(model_params['num_clones']) * int(model_params['batch_size'])
+            pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.pad_to_max_dimension = True
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
     pipeline_config.train_config.num_steps=int(model_params['epochs'])
