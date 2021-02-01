@@ -2355,13 +2355,22 @@ class MaskRCNN(object):
             os.makedirs(tensorboard_logs_dir)
 
         # Callbacks
-        callbacks = [
-            keras.callbacks.TensorBoard(log_dir=tensorboard_logs_dir, profile_batch=0,
-                                        histogram_freq=0, write_graph=True, write_images=False),
-            keras.callbacks.ModelCheckpoint(self.checkpoint_path,
-                                            verbose=0, save_weights_only=True),
-            TqdmCallback()
-        ]
+        if self.config.TENSORBOARD_LOG_STEPS <= 0:
+            callbacks = [
+                keras.callbacks.TensorBoard(log_dir=tensorboard_logs_dir, profile_batch=0,
+                                            histogram_freq=0, write_graph=True, write_images=False),
+                keras.callbacks.ModelCheckpoint(self.checkpoint_path,
+                                                verbose=0, save_weights_only=True),
+                TqdmCallback()
+            ]
+        else:
+            callbacks = [
+                keras.callbacks.TensorBoard(log_dir=tensorboard_logs_dir, profile_batch=0, update_freq=self.config.TENSORBOARD_LOG_STEPS,
+                                            histogram_freq=0, write_graph=True, write_images=False),
+                keras.callbacks.ModelCheckpoint(self.checkpoint_path,
+                                                verbose=0, save_weights_only=True),
+                TqdmCallback()
+            ]
 
         # Add custom callbacks to the list
         if custom_callbacks:

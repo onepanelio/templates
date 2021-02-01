@@ -42,6 +42,11 @@ class Config(object):
     # a lot of time on validation stats.
     STEPS_PER_EPOCH = 1000
 
+    # Number of training steps to log Tensorboard training data
+    # use 0 to log every epoch. Note that writing too frequently to TensorBoard 
+    # can slow down your training. 
+    TENSORBOARD_LOG_STEPS = 100
+
     # Number of validation steps to run at the end of every training epoch.
     # A bigger number improves accuracy of validation stats, but slows
     # down the training.
