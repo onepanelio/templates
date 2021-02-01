@@ -81,6 +81,12 @@ func Sync(params SyncParameters) func() {
 
 		util.Status.ClearError()
 
+		if params.Action == util.ActionDownload {
+			log.Printf("Syncing files to Workspace...\n")
+		} else {
+			log.Printf("Syncing files to object storage...\n")
+		}
+
 		log.Printf("Running cmd %v\n", cmd.String())
 
 		if err := util.RunCommand(cmd); err != nil {
@@ -92,11 +98,14 @@ func Sync(params SyncParameters) func() {
 		}
 
 		if params.Action == util.ActionDownload {
+			log.Printf("Syncing to Workspace is complete.")
 			util.Status.MarkLastDownload()
 		}
 		if params.Action == util.ActionUpload {
+			log.Printf("Syncing to object storage is complete.")
 			util.Status.MarkLastUpload()
 		}
+
 		if err := util.SaveSyncStatus(); err != nil {
 			fmt.Printf("[error] save sync status: Message %v\n", err)
 		}
