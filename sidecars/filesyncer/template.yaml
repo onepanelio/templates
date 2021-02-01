@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
   - name: filesyncer
-    image: onepanel/filesyncer:0.18.0
+    image: onepanel/filesyncer:v0.18.0
     args:
       - server
       # This exposes filsyncer sync endpoint at /sys/filesyncer/api/sync
