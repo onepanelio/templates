@@ -483,7 +483,7 @@ def get_augmentations(params):
     return augmentation
 
 def create_output_folders(output_dir):
-    subdirs = ['tensorboard', 'checkpoints', 'model'] 
+    subdirs = ['tensorboard/heads', 'tensorboard/4+', 'tensorboard/all', 'checkpoints', 'model'] 
     for subdir in subdirs:
         dir = os.path.join(output_dir, subdir)
         if not os.path.isdir(dir):

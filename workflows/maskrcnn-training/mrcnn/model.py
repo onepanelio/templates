@@ -2290,6 +2290,7 @@ class MaskRCNN(object):
             defined in the Dataset class.
         """
         assert self.mode == "training", "Create model in training mode."
+        layer_id = layers
 
         # Pre-defined layer regular expressions
         layer_regex = {
@@ -2350,7 +2351,7 @@ class MaskRCNN(object):
 
 
         # Create log_dir if it does not exist
-        tensorboard_logs_dir = os.path.join(self.log_dir, "tensorboard")
+        tensorboard_logs_dir = os.path.join(self.log_dir, "tensorboard/{}/".format(layer_id))
         if not os.path.exists(tensorboard_logs_dir):
             os.makedirs(tensorboard_logs_dir)
 
