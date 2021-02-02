@@ -312,39 +312,39 @@ def train(params, model, config, train_dataset, val_dataset, output_folder, use_
     # *** Training schedule ***
 
     # Training - Stage 1
-    if params['stage-1-epochs'] > 0:
+    if params['stage_1_epochs'] > 0:
         print("Training network heads")
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=params['stage-1-epochs'],
+                    epochs=params['stage_1_epochs'],
                     layers='heads',
                     augmentation=augmentation)
     else:
-        print("First stage skipped, {} sent as num of first stage epochs".format(params['stage-1-epochs']))
+        print("First stage skipped, {} sent as num of first stage epochs".format(params['stage_1_epochs']))
 
     # Training - Stage 2
     # Finetune layers from ResNet stage 4 and up
-    if params['stage-2-epochs'] > params['stage-1-epochs']:
+    if params['stage_2_epochs'] > params['stage_1_epochs']:
         print("Fine tune Resnet stage 4 and up")
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=params['stage-2-epochs'],
+                    epochs=params['stage_2_epochs'],
                     layers='4+',
                     augmentation=augmentation)
     else:
-        print("Second stage skipped, {} sent as num of second stage epochs".format(params['stage-2-epochs']))
+        print("Second stage skipped, {} sent as num of second stage epochs".format(params['stage_2_epochs']))
 
     # Training - Stage 3
     # Fine tune all layers
-    if params['stage-3-epochs'] > params['stage-2-epochs']:
+    if params['stage_3_epochs'] > params['stage_2_epochs']:
         print("Fine tune all layers")
         model.train(dataset_train, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
-                    epochs=params['stage-3-epochs'],
+                    epochs=params['stage_3_epochs'],
                     layers='all',
                     augmentation=augmentation)
     else:
-        print("Third stage skipped, {} sent as num of third stage epochs".format(params['stage-3-epochs']))
+        print("Third stage skipped, {} sent as num of third stage epochs".format(params['stage_3_epochs']))
 
     # Extract trained model
     print("Training complete\n Extracting trained model")
@@ -387,16 +387,23 @@ def preprocess_inputs(args):
     params['steps_per_epoch'] = params.pop('num_steps')
     params['num_classes'] = int(args.num_classes) + 1
 
+    if 'stage-1-epochs' in params:
+        params['stage_1_epochs'] = params.pop('stage-1-epochs')
+    if 'stage-2-epochs' in params:
+        params['stage_2_epochs'] = params.pop('stage-2-epochs')
+    if 'stage-3-epochs' in params:
+        params['stage_3_epochs'] = params.pop('stage-3-epochs')
+
     # Check num epochs sanity
-    if 'stage-1-epochs' in params and 'stage-2-epochs' in params and 'stage-3-epochs' in params:
-        params['stage-1-epochs'] = int(params['stage-1-epochs'])
-        params['stage-2-epochs'] = params['stage-1-epochs'] + int(params['stage-2-epochs'])
-        params['stage-3-epochs'] = params['stage-2-epochs'] + int(params['stage-3-epochs'])
+    if 'stage_1_epochs' in params and 'stage_2_epochs' in params and 'stage_3_epochs' in params:
+        params['stage_1_epochs'] = int(params['stage_1_epochs'])
+        params['stage_2_epochs'] = params['stage_1_epochs'] + int(params['stage_2_epochs'])
+        params['stage_3_epochs'] = params['stage_2_epochs'] + int(params['stage_3_epochs'])
     else:
         print('Num of epochs at each stage not provided, using default ones')
-        params['stage-1-epochs'] = 1
-        params['stage-2-epochs'] = 2
-        params['stage-3-epochs'] = 3
+        params['stage_1_epochs'] = 1
+        params['stage_2_epochs'] = 2
+        params['stage_3_epochs'] = 3
     return params
 
 
@@ -468,7 +475,7 @@ def extract_model(train_dataset, output_dir, config, params):
         os.path.join(output_dir, "model")
     )
     shutil.copyfile(
-        os.path.join(output_dir, "checkpoints/mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage-3-epochs']))),
+        os.path.join(output_dir, "checkpoints/mask_rcnn_{}_{:04d}.h5".format(config.NAME.lower(), int(params['stage_3_epochs']))),
         os.path.join(output_dir, "model/onepanel_trained_model.h5")
     )
 
