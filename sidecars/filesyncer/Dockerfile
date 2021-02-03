@@ -4,8 +4,9 @@ WORKDIR /go/src
 COPY . .
 RUN go build -o /go/bin/filesyncer
 
-FROM amazon/aws-cli:2.1.20
+FROM python:3.7-slim
 
 ENV PATH="/go/bin:${PATH}"
 COPY --from=builder /go/bin/filesyncer /go/bin/
+RUN pip install awscli==1.15.58
 ENTRYPOINT ["filesyncer"]
