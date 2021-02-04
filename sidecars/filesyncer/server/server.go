@@ -72,7 +72,7 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 
 func sync() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now().UTC().Unix()
+		timestamp := time.Now().UTC().Unix()
 
 		if r.Method != http.MethodPost {
 			log.Printf("[error] sync request failed: only POST or OPTIONS methods are allowed allowed\n")
@@ -95,10 +95,10 @@ func sync() http.Handler {
 
 		result := struct {
 			Message string `json:"message"`
-			Start int64 `json:"start"`
+			Timestamp int64 `json:"start"`
 		} {
 			Message: "Sync command sent",
-			Start: start,
+			Timestamp: timestamp,
 		}
 
 		resultBytes, err := json.Marshal(result)
