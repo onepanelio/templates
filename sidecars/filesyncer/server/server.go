@@ -94,10 +94,10 @@ func sync() http.Handler {
 		w.Header().Set("content-type", "application/json")
 
 		result := struct {
-			Message string `json:"message"`
-			Timestamp int64 `json:"start"`
-		} {
-			Message: "Sync command sent",
+			Message   string
+			Timestamp int64
+		}{
+			Message:   "Sync command sent",
 			Timestamp: timestamp,
 		}
 
