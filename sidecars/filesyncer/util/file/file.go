@@ -1,10 +1,80 @@
 package file
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
+
+// ListOptions is configuration for the ListFiles method
+type ListOptions struct {
+	ShowHidden bool
+}
+
+// GetOptions is configuration for the GetContents method
+type GetOptions struct {
+	MaxSize int64 // Limit file size to this amount. Anything above this returns an error
+}
+
+var FileTooBig = errors.New("file is too big")
+var NotAFile = errors.New("path is not a file")
+var NotADirectory = errors.New("path is not a directory")
+
+// File represents a system file.
+type File struct {
+	Path         string
+	Name         string
+	Size         int64
+	Extension    string
+	ContentType  string
+	LastModified time.Time
+	Directory    bool
+}
+
+// FilePathToParentPath given a path, returns the parent path, assuming a '/' delimiter
+// Result does not have a trailing slash.
+// -> a/b/c/d would return a/b/c
+// -> a/b/c/d/ would return a/b/c
+// If path is empty string, it is returned.
+// If path is '/' (root) it is returned as is.
+// If there is no '/', '/' is returned.
+func FilePathToParentPath(path string) string {
+	separator := "/"
+	if path == "" || path == separator {
+		return path
+	}
+
+	if strings.HasSuffix(path, "/") {
+		path = path[0 : len(path)-1]
+	}
+
+	lastIndexOfForwardSlash := strings.LastIndex(path, separator)
+	if lastIndexOfForwardSlash <= 0 {
+		return separator
+	}
+
+	return path[0:lastIndexOfForwardSlash]
+}
+
+// FilePathToName returns the name of the file, assuming that "/" denote directories and that the
+// file name is after the last "/"
+func FilePathToName(path string) string {
+	if strings.HasSuffix(path, "/") {
+		path = path[:len(path)-1]
+	}
+
+	lastSlashIndex := strings.LastIndex(path, "/")
+	if lastSlashIndex < 0 {
+		return path
+	}
+
+	return path[lastSlashIndex+1:]
+}
+
 
 // exists returns whether the given file or directory exists
 func Exists(path string) (bool, error) {
@@ -72,4 +142,88 @@ func DeleteIfExists(path string) (existed bool, err error) {
 	}
 
 	return
+}
+
+
+// ListFiles returns all of the Files in the directory.
+func ListFiles(filePath string, options *ListOptions) ([]*File, error) {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if !fileInfo.IsDir() {
+		return nil, NotADirectory
+	}
+
+
+	result := make([]*File, 0)
+	err = filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
+		if filePath == path {
+			return nil
+		}
+
+		if !options.ShowHidden && strings.HasPrefix(info.Name(), ".") {
+			return nil
+		}
+
+		newFile := File{
+			Path:         path,
+			Name:         info.Name(),
+			Size:         info.Size(),
+			Extension:    filepath.Ext(path),
+			LastModified: info.ModTime().UTC(),
+			Directory:    info.IsDir(),
+		}
+
+		result = append(result, &newFile)
+
+		if info.IsDir() {
+			return filepath.SkipDir
+		}
+
+		return nil
+	})
+
+
+	return result, err
+}
+
+// GetContents returns the contents of the file
+func GetContents(path string, options *GetOptions) ([]byte, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if fileInfo.IsDir() {
+		return nil, NotAFile
+	}
+
+	if options.MaxSize != 0 && options.MaxSize <= fileInfo.Size() {
+		return nil, FileTooBig
+	}
+
+	return ioutil.ReadFile(path)
+}
+
+// PrettyPrintFiles is a utility that prints out files in a neat format, similar to ls on linux
+func PrettyPrintFiles(files []*File) string {
+	result := ""
+
+	for _, file := range files {
+		line := ""
+		if file.Directory {
+			line += "d "
+		} else {
+			line += "- "
+		}
+
+		line += file.Name + "   "
+		line += fmt.Sprintf("%v", file.Size) + "   "
+
+		result += line + "\n"
+	}
+
+	return result
 }

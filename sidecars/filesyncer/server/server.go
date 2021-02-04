@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,6 +20,33 @@ import (
 type Config struct {
 	URL       string
 	URLPrefix string
+}
+
+// ServerError represents an error that happened while processing a request and is returned to the client
+type ServerError struct {
+	Message string `json:"message"`
+}
+
+// NewServerError creates a ServerError with a given message
+func NewServerError(message string) *ServerError {
+	return &ServerError{
+		Message: message,
+	}
+}
+
+func writeJson(w http.ResponseWriter, data interface{}) error {
+	resultBytes, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("error Marshaling json %v", err.Error())
+		return err
+	}
+
+	if _, err := io.WriteString(w, string(resultBytes)); err != nil {
+		log.Printf("error writing json to ResponseWriter %v", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 // routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
@@ -75,7 +103,7 @@ func sync() http.Handler {
 		timestamp := time.Now().UTC().Unix()
 
 		if r.Method != http.MethodPost {
-			log.Printf("[error] sync request failed: only POST or OPTIONS methods are allowed allowed\n")
+			log.Printf("[error] sync request failed: only POST or OPTIONS methods are allowed\n")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -110,6 +138,100 @@ func sync() http.Handler {
 	})
 }
 
+func listFiles() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			log.Printf("[error] list request failed: only GET methods are allowed\n")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("content-type", "application/json")
+		queryParams := r.URL.Query()
+		path := queryParams.Get("path")
+		if path == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		files, err := file.ListFiles(path, &file.ListOptions{ShowHidden: false})
+		if err != nil {
+			if err == file.NotADirectory {
+				w.WriteHeader(http.StatusBadRequest)
+				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a directory", path)))
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+				writeJson(w, NewServerError(err.Error()))
+			}
+
+			return
+		}
+
+		result := struct {
+			Count int `json:"count"`
+			Files []*file.File `json:"files"`
+		} {
+			Count: len(files),
+			Files: files,
+		}
+
+		resultBytes, err := json.Marshal(result)
+		if err != nil {
+			return
+		}
+
+		if _, err := io.WriteString(w, string(resultBytes)); err != nil {
+			log.Printf("error %v", err)
+		}
+	})
+}
+
+func getFileContent() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			log.Printf("[error] list request failed: only GET methods are allowed\n")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("content-type", "application/json")
+		queryParams := r.URL.Query()
+		path := queryParams.Get("path")
+		if path == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		fileContent, err := file.GetContents(path, &file.GetOptions{})
+		if err != nil {
+			if err == file.NotAFile {
+				w.WriteHeader(http.StatusBadRequest)
+				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a file", path)))
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+				writeJson(w, NewServerError(err.Error()))
+			}
+			
+			return
+		}
+
+		result := struct {
+			Content []byte `json:"content"`
+		} {
+			Content: fileContent,
+		}
+
+		resultBytes, err := json.Marshal(result)
+		if err != nil {
+			return
+		}
+
+		if _, err := io.WriteString(w, string(resultBytes)); err != nil {
+			log.Printf("error %v", err)
+		}
+	})
+}
+
 func handleUnsupportedEndpoint(config Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		relativeEndpoint := r.URL.Path
@@ -129,6 +251,8 @@ func StartServer(config Config) {
 	chain := alice.New(corsHandler)
 	mux.Handle(config.URLPrefix+"/api/status", chain.Then(syncStatus()))
 	mux.Handle(config.URLPrefix+"/api/sync", chain.Then(sync()))
+	mux.Handle(config.URLPrefix+"/api/files", chain.Then(listFiles()))
+	mux.Handle(config.URLPrefix+"/api/files/content", chain.Then(getFileContent()))
 	mux.Handle("/", handleUnsupportedEndpoint(config))
 
 	fmt.Printf("Starting server at %s. Prefix: %v\n", config.URL, config.URLPrefix)
