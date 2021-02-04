@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/justinas/alice"
 	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
@@ -71,6 +72,8 @@ func putSyncStatus(w http.ResponseWriter, r *http.Request) {
 
 func sync() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now().UTC().Unix()
+
 		if r.Method != http.MethodPost {
 			log.Printf("[error] sync request failed: only POST or OPTIONS methods are allowed allowed\n")
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -91,9 +94,11 @@ func sync() http.Handler {
 		w.Header().Set("content-type", "application/json")
 
 		result := struct {
-			Message string
+			Message string `json:"message"`
+			Start int64 `json:"start"`
 		} {
 			Message: "Sync command sent",
+			Start: start,
 		}
 
 		resultBytes, err := json.Marshal(result)
