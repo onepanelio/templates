@@ -123,7 +123,7 @@ func sync() http.Handler {
 
 		result := struct {
 			Message string `json:"message"`
-			Timestamp int64 `json:"start"`
+			Timestamp int64 `json:"timestamp"`
 		} {
 			Message: "Sync command sent",
 			Timestamp: timestamp,
@@ -155,7 +155,9 @@ func listFiles() http.Handler {
 		}
 
 		files, err := file.ListFiles(path, &file.ListOptions{ShowHidden: false})
-		if err != nil {
+		if err != nil && err == file.PathNotExist {
+			files = []*file.File{}
+		} else if err != nil && err != file.PathNotExist {
 			if err == file.NotADirectory {
 				w.WriteHeader(http.StatusBadRequest)
 				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a directory", path)))
@@ -170,9 +172,11 @@ func listFiles() http.Handler {
 		result := struct {
 			Count int `json:"count"`
 			Files []*file.File `json:"files"`
+			ParentPath string `json:"parentPath"`
 		} {
 			Count: len(files),
 			Files: files,
+			ParentPath: file.FilePathToParentPath(path),
 		}
 
 		resultBytes, err := json.Marshal(result)
@@ -207,6 +211,9 @@ func getFileContent() http.Handler {
 			if err == file.NotAFile {
 				w.WriteHeader(http.StatusBadRequest)
 				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a file", path)))
+			} else if err == file.PathNotExist {
+				w.WriteHeader(http.StatusBadRequest)
+				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a valid path", path)))
 			} else {
 				w.WriteHeader(http.StatusInternalServerError)
 				writeJson(w, NewServerError(err.Error()))
@@ -216,9 +223,9 @@ func getFileContent() http.Handler {
 		}
 
 		result := struct {
-			Content []byte `json:"content"`
+			Data []byte `json:"data"`
 		} {
-			Content: fileContent,
+			Data: fileContent,
 		}
 
 		resultBytes, err := json.Marshal(result)

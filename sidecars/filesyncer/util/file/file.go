@@ -23,16 +23,17 @@ type GetOptions struct {
 var FileTooBig = errors.New("file is too big")
 var NotAFile = errors.New("path is not a file")
 var NotADirectory = errors.New("path is not a directory")
+var PathNotExist = errors.New("path does not exist")
 
 // File represents a system file.
 type File struct {
-	Path         string
-	Name         string
-	Size         int64
-	Extension    string
-	ContentType  string
-	LastModified time.Time
-	Directory    bool
+	Path         string `json:"path"`
+	Name         string `json:"name"`
+	Size         int64 `json:"size"`
+	Extension    string `json:"extension"`
+	ContentType  string `json:"content_type"`
+	LastModified time.Time `json:"last_modified"`
+	Directory    bool `json:"directory"`
 }
 
 // FilePathToParentPath given a path, returns the parent path, assuming a '/' delimiter
@@ -149,6 +150,10 @@ func DeleteIfExists(path string) (existed bool, err error) {
 func ListFiles(filePath string, options *ListOptions) ([]*File, error) {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, PathNotExist
+		}
+
 		return nil, err
 	}
 
@@ -167,11 +172,21 @@ func ListFiles(filePath string, options *ListOptions) ([]*File, error) {
 			return nil
 		}
 
+		extension := filepath.Ext(path)
+		fileName := info.Name()
+		if len(extension) > 0 {
+			// Remove extension from name
+			fileName = fileName[0:len(fileName)-len(extension)]
+
+			// Remove period from extension
+			extension = extension[1:]
+		}
+
 		newFile := File{
 			Path:         path,
-			Name:         info.Name(),
+			Name:         fileName,
 			Size:         info.Size(),
-			Extension:    filepath.Ext(path),
+			Extension:    extension,
 			LastModified: info.ModTime().UTC(),
 			Directory:    info.IsDir(),
 		}
@@ -193,6 +208,10 @@ func ListFiles(filePath string, options *ListOptions) ([]*File, error) {
 func GetContents(path string, options *GetOptions) ([]byte, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, PathNotExist
+		}
+
 		return nil, err
 	}
 
