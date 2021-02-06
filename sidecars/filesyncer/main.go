@@ -35,7 +35,7 @@ func help(error, action string, flags *flag.FlagSet) {
 func main() {
 	action := os.Args[1]
 	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload && os.Args[1] != util.ActionServer {
-		help("Please indicate if this is an 'upload' or 'download' action", action, nil)
+		help("Please indicate if this is an 'upload', 'download', or 'server' action", action, nil)
 	}
 
 	var filepath, bucket, prefix, interval, serverURL, serverURLPrefix string
