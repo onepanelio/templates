@@ -57,11 +57,11 @@ def process_params(params):
 
     return model_params, model_architecture
 
-def convert_labels_to_csv(path):
+def convert_labels_to_csv(path, output_path):
     with open(os.path.join(path, 'label_map.pbtxt'),'r') as f:
         txt = f.readlines()
     print('Generating label maps file...')
-    csv_out = open(os.path.join('/mnt/output/', 'classes.csv'), 'w')
+    csv_out = open(os.path.join(output_path, 'classes.csv'), 'w')
     csv_writer = csv.writer(csv_out)
     csv_writer.writerow(['labels'])
     data = {}
@@ -74,7 +74,7 @@ def convert_labels_to_csv(path):
             csv_writer.writerow([n])
             data[i] = n
     d = {'label_map': data}
-    with open(os.path.join('/mnt/output/', 'label_map.json'), 'w') as outfile:
+    with open(os.path.join(output_path, 'label_map.json'), 'w') as outfile:
         json.dump(d, outfile)
     print('Finished generating label maps file')
 
@@ -171,7 +171,11 @@ def create_pipeline(pipeline_path, model_path, label_path,
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].step = int(model_params['schedule_step_2'])
         pipeline_config.train_config.optimizer.momentum_optimizer.learning_rate.manual_step_learning_rate.schedule[1].learning_rate = float(model_params['schedule_lr_2'])
         pipeline_config.train_config.optimizer.momentum_optimizer.momentum_optimizer_value = float(model_params['momentum_optimizer_value'])
-        pipeline_config.train_config.batch_size = int(model_params['num_clones'])
+        if int(model_params['batch_size']) <= 1:
+            pipeline_config.train_config.batch_size = int(model_params['num_clones'])
+        else:
+            pipeline_config.train_config.batch_size = int(model_params['num_clones']) * int(model_params['batch_size'])
+            pipeline_config.model.faster_rcnn.image_resizer.keep_aspect_ratio_resizer.pad_to_max_dimension = True
 
     pipeline_config.train_config.fine_tune_checkpoint=model_path
     pipeline_config.train_config.num_steps=int(model_params['epochs'])

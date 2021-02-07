@@ -1,21 +1,17 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: filesyncer-gcs
+  name: filesyncer
 spec:
   containers:
-  - name: filesyncer-gcs
-    image: onepanel/filesyncer:gcs
-    imagePullPolicy: Always
+  - name: filesyncer
+    image: onepanel/filesyncer:v0.18.0
     args:
-      - download
-    env:
-      - name: FS_PATH
-        value: /mnt/data
-      - name: FS_PREFIX
-        value: data
+      - server
+      # This exposes filsyncer sync endpoint at /sys/filesyncer/api/sync
+      - -server-prefix=/sys/filesyncer
     volumeMounts:
-    - name: config
+    - name: sys-namespace-config
       mountPath: /etc/onepanel
       readOnly: true
     - name: data
@@ -23,7 +19,8 @@ spec:
   volumes:
   - name: data
     emptyDir: {}
-  - name: config
+  # Note that this is automatically injected in Onepanel
+  - name: sys-namespace-config
     projected:
       sources:
         - secret:

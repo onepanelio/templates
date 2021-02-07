@@ -1,19 +1,32 @@
-# File-Syncer
+# FileSyncer
 
-Sidecar container for syncing files from multiple object storage providers. 
-
-Currently supports:
-
-- S3
-- GCS
-- Azure blob storage
-
+Sidecar container for syncing files from the storage providers supported by Onepanel.
 
 ## How to run locally
 
-`file-syncer` is meant to run in Onepanel as a sidecar container. 
+`filesyncer` is meant to run in Onepanel as a sidecar container. For development, you can run it as follows.
 
-For development, you can run as follows:
+### Server mode
+
+In this mode, you can send HTTP requests to `filesyncer` to sync down from an object storage prefix to a local path or sync up from a local path to an object storage prefix.
+
+To run `filesyncer` in server mode:
+
+```bash
+go run main.go server -server-prefix /sys/filesyncer
+```
+
+To test the endpoints:
+
+```bash
+# Sync down
+curl localhost:8888/sys/filesyncer/api/sync -X POST --data '{"action": "download", "path":"/tmp", "prefix":"artifacts/my-namespace/"}'
+
+# Sync up
+curl localhost:8888/sys/filesyncer/api/sync -X POST --data '{"action": "upload", "path":"/tmp", "prefix":"artifacts/my-namespace/"}'
+```
+
+### Automatic syncing mode
 
 ```bash
 FS_PATH=./files FS_PREFIX=data go run main.go upload
@@ -28,27 +41,18 @@ FS_PATH=./files FS_PREFIX=data FS_PROVIDER=s3 AWS_ACCESS_KEY_ID=<value> AWS_SECR
 You can also indicate `provider`, `path` and `prefix` as flags:
 
 ```bash
-AWS_ACCESS_KEY_ID=<value> AWS_SECRET_ACCESS_KEY=<value> go run main.go upload --provider s3 --path ./files --prefix data 
+AWS_ACCESS_KEY_ID=<value> AWS_SECRET_ACCESS_KEY=<value> go run main.go upload --path ./files --prefix data
 ```
 
 You can also run via `docker` as follows:
 
 ```bash
-# s3
-docker run -it -v $(pwd)/files:/mnt -e AWS_ACCESS_KEY_ID=<value> -e AWS_SECRET_ACCESS_KEY=<value> file-syncer:latest [upload|download] \
-    --provider s3 --path /mnt --bucket <bucket> --prefix <prefix>
-
-# gcs
-docker run -it -v $(pwd)/files:/mnt -e GOOGLE_APPLICATION_CREDENTIALS=<key.json-path> file-syncer:latest [upload|download] \
-    --provider gcs --path /mnt --bucket <bucket> --prefix <prefix>
-
-# az
-docker run -it -v $(pwd)/files:/mnt -e AZURE_STORAGE_ACCOUNT=<account> -e AZURE_STORAGE_KEY=<key> file-syncer:latest [upload|download] \
-    --provider az --path /mnt --bucket <container> --prefix <prefix>
+docker run -it -v $(pwd)/files:/mnt -e AWS_ACCESS_KEY_ID=<value> -e AWS_SECRET_ACCESS_KEY=<value> filesyncer:0.17.0 [upload|download] \
+    --path /mnt --bucket <bucket> --prefix <prefix>
 ```
 
 Note that also indicate `FS_PROVIDER`, `FS_PATH` and `FS_PREFIX` as environment variables in the Docker commands, or you can mount the secret mocks like so:
 
 ```bash
-docker run -v $(pwd)/files:/mnt -v $(pwd)/onepanel:/etc/onepanel -e FS_PATH=/mnt -e FS_PREFIX=data filesyncer:gcs upload
+docker run -v $(pwd)/files:/mnt -v $(pwd)/onepanel:/etc/onepanel -e FS_PATH=/mnt -e FS_PREFIX=data filesyncer:0.17.0 upload
 ```

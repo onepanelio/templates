@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+
 	"sigs.k8s.io/yaml"
 )
 
@@ -27,23 +28,12 @@ type artifactRepositoryS3Provider struct {
 	SecretKeySecret artifactRepositorySecret
 }
 
-// artifactRepositoryGCSProvider defines the structure for gcs config
-type artifactRepositoryGCSProvider struct {
-	KeyFormat               string
-	Bucket                  string
-	Endpoint                string
-	Insecure                bool
-	ServiceAccountKeyPath   string
-	ServiceAccountKeySecret artifactRepositorySecret
+// ArtifactRepositoryProviderConfig defines the structure for artifactRepository config
+type ArtifactRepositoryProviderConfig struct {
+	S3 *artifactRepositoryS3Provider
 }
 
-// artifactRepositoryProviderConfig defines the structure for artifactRepository config
-type artifactRepositoryProviderConfig struct {
-	S3  *artifactRepositoryS3Provider
-	GCS *artifactRepositoryGCSProvider
-}
-
-func injectS3Credentials(config *artifactRepositoryProviderConfig) error {
+func injectS3Credentials(config *ArtifactRepositoryProviderConfig) error {
 	accessKey, err := ioutil.ReadFile(fmt.Sprintf("%v/%v", ConfigLocation, config.S3.AccessKeySecret.Key))
 	if err != nil {
 		return err
@@ -60,14 +50,14 @@ func injectS3Credentials(config *artifactRepositoryProviderConfig) error {
 	return nil
 }
 
-func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
+func GetArtifactRepositoryConfig() (*ArtifactRepositoryProviderConfig, error) {
 	configFilePath := path.Join(ConfigLocation, "artifactRepository")
 	content, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var config *artifactRepositoryProviderConfig
+	var config *ArtifactRepositoryProviderConfig
 	if err = yaml.Unmarshal(content, &config); err != nil {
 		return nil, err
 	}
@@ -77,8 +67,6 @@ func GetArtifactRepositoryConfig() (*artifactRepositoryProviderConfig, error) {
 
 	if config.S3 != nil {
 		injectS3Credentials(config)
-	} else if config.GCS != nil {
-		config.GCS.ServiceAccountKeyPath = fmt.Sprintf("%v/%v", ConfigLocation, config.GCS.ServiceAccountKeySecret.Key)
 	} else {
 		return nil, errors.New("invalid configuration")
 	}
