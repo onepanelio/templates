@@ -175,9 +175,6 @@ func ListFiles(filePath string, options *ListOptions) ([]*File, error) {
 		extension := filepath.Ext(path)
 		fileName := info.Name()
 		if len(extension) > 0 {
-			// Remove extension from name
-			fileName = fileName[0:len(fileName)-len(extension)]
-
 			// Remove period from extension
 			extension = extension[1:]
 		}
