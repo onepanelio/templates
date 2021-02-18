@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
@@ -8,7 +9,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/justinas/alice"
@@ -263,6 +267,27 @@ func StartServer(config Config) {
 	mux.Handle("/", handleUnsupportedEndpoint(config))
 
 	fmt.Printf("Starting server at %s. Prefix: %v\n", config.URL, config.URLPrefix)
-	err := http.ListenAndServe(config.URL, mux)
-	log.Printf("%v", err)
+
+	server := &http.Server{Addr: config.URL, Handler: mux}
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			if err != http.ErrServerClosed {
+				log.Printf("err: %v", err.Error())
+			}
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+
+	signal.Notify(c, syscall.SIGTERM, os.Interrupt)
+
+	// Block until any signal is received
+	s := <-c
+	log.Println("Got signal:", s)
+
+	if err := server.Shutdown(context.Background()); err != nil {
+		log.Printf("error shutting down: %v", err.Error())
+ 	} else {
+		log.Printf("Shut down server")
+	}
 }

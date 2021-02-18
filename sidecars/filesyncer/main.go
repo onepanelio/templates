@@ -52,6 +52,16 @@ func main() {
 	flags.DurationVar(&initialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
 	flags.Parse(os.Args[2:])
 
+	serverConfig := server.Config{
+		URL:       serverURL,
+		URLPrefix: serverURLPrefix,
+	}
+	// If action is server, we just run the server
+	if action == util.ActionServer {
+		server.StartServer(serverConfig)
+		return
+	}
+
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
 		fmt.Printf("[error] Unable to create status file path '%v'. Message: %v\n", util.StatusFilePath, err)
 		return
@@ -73,15 +83,6 @@ func main() {
 		return
 	}
 
-	serverConfig := server.Config{
-		URL:       serverURL,
-		URLPrefix: serverURLPrefix,
-	}
-	// If action is server, we just run the server
-	if action == util.ActionServer {
-		server.StartServer(serverConfig)
-		return
-	}
 
 	if filepath == "" {
 		filepath = util.Getenv("FS_PATH", "")
