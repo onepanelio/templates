@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
@@ -32,13 +33,46 @@ func help(error, action string, flags *flag.FlagSet) {
 	os.Exit(1)
 }
 
+func validateBackendFlagValid(backend string) error {
+	backendStorages := strings.Split(backend, ",")
+	if len(backendStorages) == 0 {
+		return fmt.Errorf("unknown configuration for backend flag: '%v'", backend)
+	}
+	if len(backendStorages) > 2 {
+		return fmt.Errorf("unknown configuration for backend flag, more than 2 results")
+	}
+	for _, backendStorage := range backendStorages {
+		if backendStorage != "local-storage" && backendStorage != "object-storage" {
+			return fmt.Errorf("unknown backend option: '%v'", backendStorage)
+		}
+	}
+
+	return nil
+}
+
+func parseBackendFlag(backend string) (localStorage, objectStorage bool) {
+	backendStorages := strings.Split(backend, ",")
+
+	for _, backendStorage := range backendStorages {
+		if backendStorage == "local-storage" {
+			localStorage = true
+		}
+
+		if backendStorage == "object-storage" {
+			objectStorage = true
+		}
+	}
+
+	return localStorage, objectStorage
+}
+
 func main() {
 	action := os.Args[1]
 	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload && os.Args[1] != util.ActionServer {
 		help("Please indicate if this is an 'upload', 'download', or 'server' action", action, nil)
 	}
 
-	var filepath, bucket, prefix, interval, serverURL, serverURLPrefix string
+	var filepath, bucket, prefix, interval, serverURL, serverURLPrefix, backend string
 	var initialDelay time.Duration
 	flags := flag.NewFlagSet(action, flag.ExitOnError)
 	flags.StringVar(&filepath, "path", "", "Path to local directory")
@@ -50,14 +84,23 @@ func main() {
 	flags.StringVar(&serverURLPrefix, "server-prefix", "", "Prefix for the server api urls")
 	flags.StringVar(&util.ConfigLocation, "config-path", "/etc/onepanel", "The location of config files. A file named artifactRepository is expected to be here.")
 	flags.DurationVar(&initialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
+	flags.StringVar(&backend, "backend", "local-storage,object-storage", "The file API you want to expose. Defaults to be local and object storage.")
 	flags.Parse(os.Args[2:])
+
+
+	if err := validateBackendFlagValid(backend); err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+
+	localStorage, objectStorage := parseBackendFlag(backend)
 
 	serverConfig := server.Config{
 		URL:       serverURL,
 		URLPrefix: serverURLPrefix,
 	}
-	// If action is server, we just run the server
-	if action == util.ActionServer {
+
+	if action == util.ActionServer && localStorage && !objectStorage {
 		server.StartServer(serverConfig)
 		return
 	}
@@ -83,6 +126,10 @@ func main() {
 		return
 	}
 
+	if action == util.ActionServer  {
+		server.StartServer(serverConfig)
+		return
+	}
 
 	if filepath == "" {
 		filepath = util.Getenv("FS_PATH", "")
