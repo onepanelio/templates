@@ -3,30 +3,30 @@ maxExperimentDuration: 1h
 maxTrialNumber: 10
 trainingService:
   platform: local
+  useActiveGpu: True
 tuner:
-  name: TPE       # choices: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner, GPTuner
+  name: TPE                  # choices: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner, GPTuner
   classArgs:
-    optimize_mode: maximize   # choices: maximize, minimize
-trialCommand: python main.py --output /mnt/output
+    optimize_mode: maximize  # choices: maximize, minimize
 trialConcurrency: 1
-#tunerGpuIndices: [0]           # uncomment and update to the GPU indices to assign this tuner
-#trialGpuNumber: 1              # uncomment and update number to number of GPUs
+trialGpuNumber: 0            # update number to number of GPUs if GPU is present
+trialCommand: python main.py --output /mnt/output
 searchSpace:
-    dropout_rate:
-      _type: uniform
-      _value: [0.5,0.9]
-    conv_size:
-      _type: choice
-      _value: [2,3,5,7]
-    hidden_size:
-      _type: choice
-      _value: [124,512,1024]
-    batch_size:
-      _type: choice
-      _value: [16,32]
-    learning_rate:
-      _type: choice
-      _value: [0.0001,0.001,0.01,0.1]
-    epochs:
-      _type: choice
-      _value: [10]
+  dropout_rate:
+    _type: uniform
+    _value: [0.5,0.9]
+  conv_size:
+    _type: choice
+    _value: [2,3,5,7]
+  hidden_size:
+    _type: choice
+    _value: [124,512,1024]
+  batch_size:
+    _type: choice
+    _value: [16,32]
+  learning_rate:
+    _type: choice
+    _value: [0.0001,0.001,0.01,0.1]
+  epochs:
+    _type: choice
+    _value: [10]
