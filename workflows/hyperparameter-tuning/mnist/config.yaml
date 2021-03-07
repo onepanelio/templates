@@ -1,4 +1,4 @@
-experimentName: MNIST
+experimentName: MNIST TF v2.x
 maxExperimentDuration: 1h
 maxTrialNumber: 10
 trainingService:
@@ -11,6 +11,8 @@ tuner:
 trialConcurrency: 1
 trialGpuNumber: 0            # update number to number of GPUs if GPU is present
 trialCommand: python main.py --output /mnt/output
+trialCodeDirectory: .
+# Change according to your hyperparameters and ranges
 searchSpace:
   dropout_rate:
     _type: uniform
