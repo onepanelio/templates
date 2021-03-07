@@ -8,7 +8,7 @@ RUN apt-get update \
  && apt-get install -y jq \
  && rm -rf /var/lib/apt/lists/*
 
-RUN pip --no-cache-dir install nni==2.0 \
+RUN pip --no-cache-dir install nni==2.0 ruamel_yaml==0.15.80 \
     'glances[web,gpu]' \
     albumentations \
     imgaug
