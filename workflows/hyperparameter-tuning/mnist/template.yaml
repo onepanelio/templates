@@ -115,8 +115,7 @@ templates:
         # Note that you can `pip install` additional tools here if necessary
         - |
           cd /mnt/data/src/workflows/hyperparameter-tuning/mnist/ && \
-          python -u /opt/onepanel/nni/start.py \
-            --config config.yaml
+          python -u /opt/onepanel/nni/start.py --config config.yaml
       workingDir: /mnt
       volumeMounts:
         - name: hyperparamtuning-data
