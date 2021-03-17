@@ -202,7 +202,6 @@ func getFileContent() http.Handler {
 			return
 		}
 
-		w.Header().Set("content-type", "application/json")
 		queryParams := r.URL.Query()
 		path := queryParams.Get("path")
 		if path == "" {
@@ -210,36 +209,14 @@ func getFileContent() http.Handler {
 			return
 		}
 
-		fileContent, err := file.GetContents(path, &file.GetOptions{})
+		fileInfo, err := os.Stat(path)
 		if err != nil {
-			if err == file.NotAFile {
-				w.WriteHeader(http.StatusBadRequest)
-				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a file", path)))
-			} else if err == file.PathNotExist {
-				w.WriteHeader(http.StatusBadRequest)
-				writeJson(w, NewServerError(fmt.Sprintf("'%v' is not a valid path", path)))
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-				writeJson(w, NewServerError(err.Error()))
-			}
-			
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		result := struct {
-			Data []byte `json:"data"`
-		} {
-			Data: fileContent,
-		}
-
-		resultBytes, err := json.Marshal(result)
-		if err != nil {
-			return
-		}
-
-		if _, err := io.WriteString(w, string(resultBytes)); err != nil {
-			log.Printf("error %v", err)
-		}
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%v"`, fileInfo.Name()))
+		http.ServeFile(w, r, path)
 	})
 }
 
