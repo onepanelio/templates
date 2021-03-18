@@ -36,8 +36,7 @@ RUN ARCH="$(dpkg --print-architecture)" && \
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 RUN curl -fsSL https://code-server.dev/install.sh | sh
-RUN code-server --install-extension ms-python.python
-RUN mkdir /data
+RUN code-server --install-extension ms-python.python@2021.3.658691958
 
 EXPOSE 8080
 WORKDIR /data
