@@ -1,12 +1,6 @@
-ARG CONTAINER_TAG=1.0.1
-# Note that despite the name, jupyterlab should be pytorch-gpu image.
-ARG BASE_CONTAINER=onepanel/jupyterlab:$CONTAINER_TAG
-FROM $BASE_CONTAINER
+FROM onepanel/dl:v0.20.0
 
 LABEL maintainer="Onepanel, Inc. <support@onepanel.io>"
-
-#Do not switch out root user, want to run as root.
-USER root
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
