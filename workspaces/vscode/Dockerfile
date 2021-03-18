@@ -36,7 +36,6 @@ RUN ARCH="$(dpkg --print-architecture)" && \
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 RUN curl -fsSL https://code-server.dev/install.sh | sh
-RUN rm /home/root/keyboard.conf
 RUN code-server --install-extension ms-python.python
 RUN mkdir /data
 
