@@ -43,7 +43,7 @@ templates:
         name: src
         path: /mnt/src
     container:
-      image: onepanel/python-sdk:v0.16.0
+      image: onepanel/python-sdk:v0.19.0
       command:
         - python
         - -u

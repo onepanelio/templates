@@ -24,39 +24,40 @@ arguments:
       hint: NNI configuration
       type: textarea.textarea
       value: |-
-        authorName: Onepanel, Inc.
         experimentName: MNIST TF v2.x
-        trialConcurrency: 1
-        maxExecDuration: 1h
-        maxTrialNum: 10
-        trainingServicePlatform: local
-        searchSpacePath: search_space.json
-        useAnnotation: false
+        maxExperimentDuration: 1h
+        maxTrialNumber: 10
+        trainingService:
+          platform: local
+          useActiveGpu: True
         tuner:
-          # gpuIndices: '0'           # uncomment and update to the GPU indices to assign this tuner
-          builtinTunerName: TPE       # choices: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner, GPTuner
+          name: TPE                  # choices: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner, GPTuner
           classArgs:
-            optimize_mode: maximize   # choices: maximize, minimize
-        trial:
-          command: python main.py --output /mnt/output
-          codeDir: .
-          # gpuNum: 1                 # uncomment and update to number of GPUs
-
-    # [CHANGE] Search space configuration
-    # Change according to your hyperparameters and ranges
-    - name: search-space
-      displayName: Search space configuration
-      required: true
-      type: textarea.textarea
-      value: |-
-        {
-          "dropout_rate": { "_type": "uniform", "_value": [0.5, 0.9] },
-          "conv_size": { "_type": "choice", "_value": [2, 3, 5, 7] },
-          "hidden_size": { "_type": "choice", "_value": [124, 512, 1024] },
-          "batch_size": { "_type": "choice", "_value": [16, 32] },
-          "learning_rate": { "_type": "choice", "_value": [0.0001, 0.001, 0.01, 0.1] },
-          "epochs": { "_type": "choice", "_value": [10] }
-        }
+            optimize_mode: maximize  # choices: maximize, minimize
+        trialConcurrency: 1
+        trialGpuNumber: 0            # update number to number of GPUs if GPU is present
+        trialCommand: python main.py --output /mnt/output
+        # [CHANGE] Search space configuration
+        # Change according to your hyperparameters and ranges
+        searchSpace:
+          dropout_rate:
+            _type: uniform
+            _value: [0.5,0.9]
+          conv_size:
+            _type: choice
+            _value: [2,3,5,7]
+          hidden_size:
+            _type: choice
+            _value: [124,512,1024]
+          batch_size:
+            _type: choice
+            _value: [16,32]
+          learning_rate:
+            _type: choice
+            _value: [0.0001,0.001,0.01,0.1]
+          epochs:
+            _type: choice
+            _value: [10]
 
     # Node pool dropdown (Node group in EKS)
     # You can add more of these if you have additional tasks that can run on different node pools
@@ -99,29 +100,22 @@ templates:
           path: /mnt/data/src/workflows/hyperparameter-tuning/mnist/config.yaml
           raw:
             data: '{{workflow.parameters.config}}'
-        # [CHANGE] Path where search_space.json will be generated or already exists
-        # Update the path below so that search_space.json is written to the same directory as your main.py file
-        # Note that your source code is cloned to /mnt/data/src
-        - name: search-space
-          path: /mnt/data/src/workflows/hyperparameter-tuning/mnist/search_space.json
-          raw:
-            data: '{{workflow.parameters.search-space}}'
     outputs:
       artifacts:
         - name: output
           path: /mnt/output
           optional: true
     container:
-      image: onepanel/dl:0.17.0
+      image: onepanel/dl:v0.20.0
       command:
       - sh
       - -c
       args:
-        # [CHANGE] Update the config path below to point to config.yaml path as described above
+        # [CHANGE] Update the path below to point to your code and config.yaml path as described above
         # Note that you can `pip install` additional tools here if necessary
         - |
-          python -u /opt/onepanel/nni/start.py \
-            --config /mnt/data/src/workflows/hyperparameter-tuning/mnist/config.yaml
+          cd /mnt/data/src/workflows/hyperparameter-tuning/mnist/ && \
+          python -u /opt/onepanel/nni/start.py --config config.yaml
       workingDir: /mnt
       volumeMounts:
         - name: hyperparamtuning-data
@@ -140,7 +134,7 @@ templates:
           - containerPort: 9000
             name: nni
       - name: tensorboard
-        image: onepanel/dl:0.17.0
+        image: onepanel/dl:v0.20.0
         command:
           - sh
           - '-c'
@@ -165,7 +159,7 @@ templates:
         name: src
         path: /mnt/src
     container:
-      image: onepanel/python-sdk:v0.16.0
+      image: onepanel/python-sdk:v0.19.0
       command:
         - python
         - -u
