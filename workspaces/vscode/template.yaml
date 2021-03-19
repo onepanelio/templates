@@ -1,6 +1,6 @@
 containers:
   - name: vscode
-    image: onepanel/vscode:1.0.0
+    image: onepanel/vscode:v0.20.0_code-server.3.9.1
     command: ["/bin/bash", "-c", "pip install onepanel-sdk && /usr/bin/entrypoint.sh --bind-addr 0.0.0.0:8080 --auth none ."]
     ports:
       - containerPort: 8080
@@ -28,7 +28,7 @@ containers:
               conda env export > /data/.environment.yml -n base;
               code-server --list-extensions | tail -n +2 > /data/.vscode-extensions.txt;
   - name: sys-filesyncer
-    image: onepanel/filesyncer:v0.18.0
+    image: onepanel/filesyncer:v0.20.0
     imagePullPolicy: Always
     args:
       - server

@@ -1,12 +1,6 @@
-ARG CONTAINER_TAG=1.0.1
-# Note that despite the name, jupyterlab should be pytorch-gpu image.
-ARG BASE_CONTAINER=onepanel/jupyterlab:$CONTAINER_TAG
-FROM $BASE_CONTAINER
+FROM onepanel/dl:v0.20.0
 
 LABEL maintainer="Onepanel, Inc. <support@onepanel.io>"
-
-#Do not switch out root user, want to run as root.
-USER root
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
@@ -42,9 +36,7 @@ RUN ARCH="$(dpkg --print-architecture)" && \
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 RUN curl -fsSL https://code-server.dev/install.sh | sh
-RUN rm /home/root/keyboard.conf
-RUN code-server --install-extension ms-python.python
-RUN mkdir /data
+RUN code-server --install-extension ms-python.python@2021.3.658691958
 
 EXPOSE 8080
 WORKDIR /data
