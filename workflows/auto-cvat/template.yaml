@@ -2,294 +2,342 @@
 entrypoint: main
 arguments:
   parameters:
-  - name: workspace-name
-    displayName: CVAT Workspace name
-    # User can change to CVAT Workspace name you want to use
-    value: 'My CVAT Workspace'
-  - name: workspace-template-uid
-    value: 'cvat'
-    type: hidden
+    - name: workspace-name
+      displayName: CVAT Workspace name
+      # User can change to CVAT Workspace name you want to use
+      value: 'My CVAT Workspace'
+    - name: workspace-template-uid
+      value: 'cvat'
+      type: hidden
 
-  - name: workspace-node-pool
-    displayName: CVAT Workspace node pool
-    type: select.nodepool
-    visibility: public
-    value: default
-    required: true
+    - name: workspace-node-pool
+      displayName: CVAT Workspace node pool
+      type: select.nodepool
+      visibility: public
+      value: default
+      required: true
 
-  - name: cvat-task-name
-    displayName: CVAT task name
-    value: 'CVAT Task'
-  - name: cvat-task-labels
-    displayName: CVAT task labels
-    type: textarea.textarea
-    # User can change to actual labels that you will be using for task
-    value: |
-      [
-        {
-          "name": "person"
-        }, 
-        {
-          "name": "car"
-        }
-      ]
-  - name: sync-directory	
-    displayName: Directory to sync raw input and training output
-    # User can change to directory in object storage that will be used for raw input and model storage
-    value: workflow-data	
-    hint: Location to sync raw input, models and checkpoints from default object storage. Note that this will be relative to the current namespace.	
-  - name: input-directory	
-    displayName: Raw input directory	
-    # User can change to directory relative to sync directory that contains all the files you want to use in CVAT task
-    value: raw-input
-    hint: Location of input directory relative to sync directory above.
-
-  - name: sys-share-volume-size
-    displayName: Disk size for your data
-    hint: Disk size in MB for volume that store raw input data and custom pre-annotation models, make sure this is at least twice as large as your "Raw input directory" data
-    required: true
-    type: input.number
-    value: "20480"  
-    
-  - name: sys-data-volume-size
-    hint: Disk size in MB for volume that stores CVAT data, make this at least 50% larger than the disk size above
-    required: true
-    type: input.number
-    displayName: Disk size for CVAT data
-    value: "30720"
-    
-templates:
-- name: main
-  dag:
-    tasks:
-    - name: launch-workspace
-      template: launch-workspace
-    - name: create-cvat-task
-      template: create-cvat-task
-      dependencies: [launch-workspace]
-      arguments:
-          parameters:
-            - name: workspace-uid
-              value: "{{tasks.launch-workspace.outputs.parameters.workspace-uid}}"
-    - name: set-cvat-task-data
-      template: set-cvat-task-data
-      dependencies: [create-cvat-task]
-      arguments:
-        parameters:
-          - name: workspace-uid
-            value: "{{tasks.launch-workspace.outputs.parameters.workspace-uid}}"
-          - name: task-id
-            value: "{{tasks.create-cvat-task.outputs.parameters.task-id}}"
-- name: launch-workspace
-  outputs:
-    parameters:
-    - name: workspace-uid
-      valueFrom:
-        path: /tmp/task.txt
-  script:
-    image: python:3.7-alpine
-    command: [python, '-u']
-    source: |
-      import os
-      import subprocess
-      import sys
-      from time import sleep
-      
-      # Install onepanel-sdk
-      subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'onepanel-sdk==0.12.0rc0'])
-      
-      import onepanel.core.api
-      from onepanel.core.api.rest import ApiException
-      from onepanel.core.api.models import Parameter
-      
-      # Get mounted service account token to use as API Key
-      with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
-          token = f.read()
-      
-      # Configure API key authorization: Bearer
-      configuration = onepanel.core.api.Configuration(
-          host = os.getenv('ONEPANEL_API_URL'),
-          api_key = {
-              'authorization': token
+    - name: cvat-task-name
+      displayName: CVAT task name
+      value: 'CVAT Task'
+    - name: cvat-task-labels
+      displayName: CVAT task labels
+      type: textarea.textarea
+      # User can change to actual labels that you will be using for task
+      value: |
+        [
+          {
+            "name": "person"
+          },
+          {
+            "name": "car"
           }
-      )
-      configuration.api_key_prefix['authorization'] = 'Bearer'
-      
-      # Enter a context with an instance of the API client
-      with onepanel.core.api.ApiClient(configuration) as api_client:
-          # Create an instance of the API class
-          api_instance = onepanel.core.api.WorkspaceServiceApi(api_client)
-          namespace = os.getenv('ONEPANEL_RESOURCE_NAMESPACE')
-          params = []
-          params.append(Parameter(name='sys-name', value='{{workflow.parameters.workspace-name}}'))
-          params.append(Parameter(name='sys-node-pool', value='{{workflow.parameters.workspace-node-pool}}'))
-          params.append(Parameter(name='sync-directory', value='{{workflow.parameters.sync-directory}}'))
-          params.append(Parameter(name='sys-data-volume-size', value='{{workflow.parameters.sys-data-volume-size}}'))
-          params.append(Parameter(name='sys-share-volume-size', value='{{workflow.parameters.sys-share-volume-size}}'))
-        
-          body = onepanel.core.api.CreateWorkspaceBody(
-                parameters=params,
-                workspace_template_uid = '{{workflow.parameters.workspace-template-uid}}',
-            ) 
-          try:
-              workspace = api_instance.create_workspace(namespace, body)
-              uid = workspace.uid
-              
-              print('Waiting for workspace to launch...\n')
-              while workspace.status.phase != 'Running':
-                  workspace = api_instance.get_workspace(namespace, uid)
-                  sleep(15)
-              print('Workspace is running at %s.\n' % workspace.url)
-                  
-              # Write the data to the file so we can use it as a parameter in the workflow
-              with open("/tmp/task.txt", "w+") as f:
-                f.write(uid)  
-                
-          except ApiException as e:
-              print("Exception when calling WorkspaceServiceApi->create_workspace: %s\n" % e)
-- name: create-cvat-task
-  inputs:
-    parameters:
-      - name: workspace-uid
-  outputs:
-    parameters:
-    - name: task-id
-      valueFrom:
-        path: /tmp/task.txt
-  script:
-    image: python:3.7-alpine
-    command: [python, '-u'] 
-    source: |
-      import os
-      import http.client
-      import json
-      
-      # Get mounted service account token to use as API Key
-      with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
-          token = f.read()
-      
+        ]
+    - name: object-storage-directory
+      displayName: Source directory in object storage
+      # User can change to directory in object storage that will be used for raw input and model storage
+      value: path/to/object-storage/directory
+      hint: Source directory for data in object storage
+    - name: workspace-directory
+      displayName: Destination directory in CVAT Workspace
+      # User can change to directory relative to sync directory that contains all the files you want to use in CVAT task
+      value: path/to/local/directory
+      hint: Destination directory to download data in CVAT Workspace relative to `/share`
 
-      endpoint = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8080'
-      conn = http.client.HTTPConnection(endpoint)
-      headers = {
-      'onepanel-auth-token': token,
-      'onepanel-username': 'workflow',
-      'Content-Type': 'application/json',
-      }
-      task = {}
-      task['name'] = '{{workflow.parameters.cvat-task-name}}'
-      task['labels'] = json.loads('''{{workflow.parameters.cvat-task-labels}}''')
-      conn.request("POST", "/api/v1/tasks", json.dumps(task), headers)
-      res = conn.getresponse()
-      data = res.read()
-      
-      data_json = json.loads(data)
-      
-      # Write the data to the file so we can use it as a parameter in the workflow
-      with open("/tmp/task.txt", "w+") as f:
-          f.write(str(data_json['id']))
-          
-      print('CVAT Task created.\n')
-      
-- name: set-cvat-task-data
-  inputs:
-    parameters:
-      - name: workspace-uid
-      - name: task-id
-  script:
-    image: python:3.7-alpine
-    command: [python, '-u'] 
-    source: |
-      import os
-      import sys
-      import http.client
-      import json
-      import urllib.parse
-      import time
-      
-      # Get mounted service account token to use as API Key
-      with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
-          token = f.read()
-      
-      print('Processing files...\n')
-      
-      workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8888'
-      
-      conn = http.client.HTTPConnection(workspace_url)
-      headers = {
-      'onepanel-auth-token': token,
-      'onepanel-username': 'workflow',
-      'Content-Type': 'application/json',
-      }
-      
-      
-      ready = False
-      while not ready:
-        time.sleep(5)
-        conn.request('GET', '/sys/filesyncer/api/status', "", headers)
+    - name: sys-share-volume-size
+      displayName: Disk size for your data
+      hint: Disk size in MB for volume that store raw input data and custom pre-annotation models, make sure this is at least twice as large as your "Raw input directory" data
+      required: true
+      type: input.number
+      value: "20480"
+
+    - name: sys-data-volume-size
+      hint: Disk size in MB for volume that stores CVAT data, make this at least 50% larger than the disk size above
+      required: true
+      type: input.number
+      displayName: Disk size for CVAT data
+      value: "30720"
+
+templates:
+  - name: main
+    dag:
+      tasks:
+        - name: launch-workspace
+          template: launch-workspace
+        - name: download-data
+          template: download-data
+          dependencies: [launch-workspace]
+          arguments:
+            parameters:
+              - name: workspace-uid
+                value: "{{tasks.launch-workspace.outputs.parameters.workspace-uid}}"
+        - name: create-cvat-task
+          template: create-cvat-task
+          dependencies: [download-data]
+          arguments:
+            parameters:
+              - name: workspace-uid
+                value: "{{tasks.launch-workspace.outputs.parameters.workspace-uid}}"
+        - name: set-cvat-task-data
+          template: set-cvat-task-data
+          dependencies: [create-cvat-task]
+          arguments:
+            parameters:
+              - name: workspace-uid
+                value: "{{tasks.launch-workspace.outputs.parameters.workspace-uid}}"
+              - name: task-id
+                value: "{{tasks.create-cvat-task.outputs.parameters.task-id}}"
+  - name: launch-workspace
+    outputs:
+      parameters:
+        - name: workspace-uid
+          valueFrom:
+            path: /tmp/task.txt
+    script:
+      image: python:3.7-alpine
+      command: [python, '-u']
+      source: |
+        import os
+        import subprocess
+        import sys
+        from time import sleep
+
+        # Install onepanel-sdk
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'onepanel-sdk==0.21.0'])
+
+        import onepanel.core.api
+        from onepanel.core.api.rest import ApiException
+        from onepanel.core.api.models import Parameter
+
+        # Get mounted service account token to use as API Key
+        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
+            token = f.read()
+
+        # Configure API key authorization: Bearer
+        configuration = onepanel.core.api.Configuration(
+            host = os.getenv('ONEPANEL_API_URL'),
+            api_key = {
+                'authorization': token
+            }
+        )
+        configuration.api_key_prefix['authorization'] = 'Bearer'
+
+        # Enter a context with an instance of the API client
+        with onepanel.core.api.ApiClient(configuration) as api_client:
+            # Create an instance of the API class
+            api_instance = onepanel.core.api.WorkspaceServiceApi(api_client)
+            namespace = os.getenv('ONEPANEL_RESOURCE_NAMESPACE')
+            params = []
+            params.append(Parameter(name='sys-name', value='{{workflow.parameters.workspace-name}}'))
+            params.append(Parameter(name='sys-node-pool', value='{{workflow.parameters.workspace-node-pool}}'))
+
+            params.append(Parameter(name='sys-data-volume-size', value='{{workflow.parameters.sys-data-volume-size}}'))
+            params.append(Parameter(name='sys-share-volume-size', value='{{workflow.parameters.sys-share-volume-size}}'))
+
+            body = onepanel.core.api.CreateWorkspaceBody(
+                  parameters=params,
+                  workspace_template_uid = '{{workflow.parameters.workspace-template-uid}}',
+              )
+            try:
+                workspace = api_instance.create_workspace(namespace, body)
+                uid = workspace.uid
+
+                print('Waiting for workspace to launch...\n')
+                while workspace.status.phase != 'Running':
+                    workspace = api_instance.get_workspace(namespace, uid)
+                    sleep(15)
+                print('Workspace is running at %s.\n' % workspace.url)
+
+                # Write the data to the file so we can use it as a parameter in the workflow
+                with open("/tmp/task.txt", "w+") as f:
+                  f.write(uid)
+
+            except ApiException as e:
+                print("Exception when calling WorkspaceServiceApi->create_workspace: %s\n" % e)
+  - name: download-data
+    inputs:
+      parameters:
+        - name: workspace-uid
+    script:
+      image: python:3.7-alpine
+      command: [python, '-u']
+      source: |
+        import os
+        import http.client
+        import json
+
+        # Get mounted service account token to use as API Key
+        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
+            token = f.read()
+
+
+        endpoint = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8888'
+        conn = http.client.HTTPConnection(endpoint)
+        headers = {
+        'onepanel-auth-token': token,
+        'onepanel-username': 'default',
+        'Content-Type': 'application/json',
+        }
+
+
+        payload = {
+          'action': 'download',
+          'path': '/share/{{workflow.parameters.workspace-directory}}',
+          'delete': False,
+          'prefix': '{{workflow.parameters.object-storage-directory}}'
+        }
+
+        conn.request("POST", "/sys/filesyncer/api/sync", json.dumps(payload), headers)
         res = conn.getresponse()
         data = res.read()
-        if data is not None:
-          try:
-            download_status = json.loads(data)
-        
-            if download_status['LastDownload'] is not None:
-              ready = True
-          except Exception as e:
-            pass
-      
 
-      workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8080'
-      conn = http.client.HTTPConnection(workspace_url)
-      
-      data_url = '/api/v1/tasks/{{inputs.parameters.task-id}}/data'
-      
-      file_path = '{{workflow.parameters.input-directory}}'
-      
-      if file_path and file_path[0] == '/':
-        file_path = file_path[1:]
+        data_json = json.loads(data)
 
-      if file_path and file_path[-1] == '/':
-        file_path = file_path[:-1]
-        
-      file_path = '/' + file_path + '/'
-      
-      if file_path == '//':
-        file_path = '/'
-      
-      params = urllib.parse.urlencode({
-          'image_quality': 70, 
-          'use-zip-chunks': True, 
-          'server_files[0]': file_path
-      })
-      
-      headers = {
-          'onepanel-auth-token': token,
-          'onepanel-username': 'workflow',
-          'Content-type': 'application/x-www-form-urlencoded',
-      }
-      
-      # Sleep for a little bit to make sure cvat finishes any processing
-      time.sleep(60)
-      conn.request('POST', data_url, params, headers)
-      res = conn.getresponse()
-      data = res.read()
-      
-      
-      status_check_url = '/api/v1/tasks/{{inputs.parameters.task-id}}/status?scheme=json'
-      ready = False
-      while not ready:
-        time.sleep(5)
-        conn.request('GET', status_check_url, "", headers)
+        print('done')
+  - name: create-cvat-task
+    inputs:
+      parameters:
+        - name: workspace-uid
+    outputs:
+      parameters:
+        - name: task-id
+          valueFrom:
+            path: /tmp/task.txt
+    script:
+      image: python:3.7-alpine
+      command: [python, '-u']
+      source: |
+        import os
+        import http.client
+        import json
+
+        # Get mounted service account token to use as API Key
+        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
+            token = f.read()
+
+
+        endpoint = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8080'
+        conn = http.client.HTTPConnection(endpoint)
+        headers = {
+        'onepanel-auth-token': token,
+        'onepanel-username': 'default',
+        'Content-Type': 'application/json',
+        }
+        task = {}
+        task['name'] = '{{workflow.parameters.cvat-task-name}}'
+        task['labels'] = json.loads('''{{workflow.parameters.cvat-task-labels}}''')
+        conn.request("POST", "/api/v1/tasks", json.dumps(task), headers)
         res = conn.getresponse()
         data = res.read()
-        if data is not None:
-          try:
-            status = json.loads(data)
-        
-            if status['state'] is not None and status['state'] == 'Finished':
-              ready = True
-          except Exception as e:
-            pass
-            
-      print('Finished processing files\n')
+
+        data_json = json.loads(data)
+
+        # Write the data to the file so we can use it as a parameter in the workflow
+        with open("/tmp/task.txt", "w+") as f:
+            f.write(str(data_json['id']))
+
+        print('CVAT Task created.\n')
+
+  - name: set-cvat-task-data
+    inputs:
+      parameters:
+        - name: workspace-uid
+        - name: task-id
+    script:
+      image: python:3.7-alpine
+      command: [python, '-u']
+      source: |
+        import os
+        import sys
+        import http.client
+        import json
+        import urllib.parse
+        import time
+
+        # Get mounted service account token to use as API Key
+        with open('/var/run/secrets/kubernetes.io/serviceaccount/token') as f:
+            token = f.read()
+
+        print('Processing files...\n')
+
+        workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8888'
+
+        conn = http.client.HTTPConnection(workspace_url)
+        headers = {
+        'onepanel-auth-token': token,
+        'onepanel-username': 'default',
+        'Content-Type': 'application/json',
+        }
+
+
+        ready = False
+        while not ready:
+          time.sleep(5)
+          conn.request('GET', '/sys/filesyncer/api/status', "", headers)
+          res = conn.getresponse()
+          data = res.read()
+          if data is not None:
+            try:
+              download_status = json.loads(data)
+
+              if download_status['LastDownload'] is not None:
+                ready = True
+            except Exception as e:
+              pass
+
+
+        workspace_url = '{{inputs.parameters.workspace-uid}}.' + os.getenv('ONEPANEL_RESOURCE_NAMESPACE')+ '.svc.cluster.local:8080'
+        conn = http.client.HTTPConnection(workspace_url)
+
+        data_url = '/api/v1/tasks/{{inputs.parameters.task-id}}/data'
+
+        file_path = '/{{workflow.parameters.workspace-directory}}'
+
+        if file_path and file_path[0] == '/':
+          file_path = file_path[1:]
+
+        if file_path and file_path[-1] == '/':
+          file_path = file_path[:-1]
+
+        file_path = '/' + file_path + '/'
+
+        if file_path == '//':
+          file_path = '/'
+
+
+        params = urllib.parse.urlencode({
+            'image_quality': 70,
+            'use-zip-chunks': True,
+            'server_files[0]': file_path
+        })
+
+        headers = {
+            'onepanel-auth-token': token,
+            'onepanel-username': 'default',
+            'Content-type': 'application/x-www-form-urlencoded',
+        }
+
+        # Sleep for a little bit to make sure cvat finishes any processing
+        time.sleep(60)
+        conn.request('POST', data_url, params, headers)
+        res = conn.getresponse()
+        data = res.read()
+
+
+        status_check_url = '/api/v1/tasks/{{inputs.parameters.task-id}}/status?scheme=json'
+        ready = False
+        while not ready:
+          time.sleep(5)
+          conn.request('GET', status_check_url, "", headers)
+          res = conn.getresponse()
+          data = res.read()
+          if data is not None:
+            try:
+              status = json.loads(data)
+
+              if status['state'] is not None and status['state'] == 'Finished':
+                ready = True
+            except Exception as e:
+              pass
+
+        print('Finished processing files\n')
