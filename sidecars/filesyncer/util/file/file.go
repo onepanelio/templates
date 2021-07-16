@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -34,6 +36,24 @@ type File struct {
 	ContentType  string `json:"content_type"`
 	LastModified time.Time `json:"last_modified"`
 	Directory    bool `json:"directory"`
+}
+
+// PaginatedFileResponse is a listing of files with pagination info
+type PaginatedFileResponse struct {
+	Count int `json:"count"`
+	TotalCount int `json:"totalCount"`
+	Page int `json:"page"`
+	Pages int `json:"pages"`
+	Files []*File `json:"files"`
+	ParentPath string `json:"parentPath"`
+}
+
+// ListPaginatedFilesOptions are all of the available options to paginate files
+type ListPaginatedFilesOptions struct {
+	Path string
+	ShowHidden bool
+	Page int
+	PerPage int
 }
 
 // FilePathToParentPath given a path, returns the parent path, assuming a '/' delimiter
@@ -197,8 +217,103 @@ func ListFiles(filePath string, options *ListOptions) ([]*File, error) {
 		return nil
 	})
 
-
 	return result, err
+}
+
+// ListPaginatedFiles returns all of the Files in the directory, paginated
+func ListPaginatedFiles(filePath string, options *ListPaginatedFilesOptions) (*PaginatedFileResponse, error) {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, PathNotExist
+		}
+
+		return nil, err
+	}
+
+	if !fileInfo.IsDir() {
+		return nil, NotADirectory
+	}
+
+
+	result := make([]*File, 0)
+	err = filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
+		if filePath == path {
+			return nil
+		}
+
+		if !options.ShowHidden && strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		extension := filepath.Ext(path)
+		fileName := info.Name()
+		if len(extension) > 0 {
+			// Remove period from extension
+			extension = extension[1:]
+		}
+
+		newFile := File{
+			Path:         path,
+			Name:         fileName,
+			Size:         info.Size(),
+			Extension:    extension,
+			LastModified: info.ModTime().UTC(),
+			Directory:    info.IsDir(),
+		}
+
+		result = append(result, &newFile)
+
+		if info.IsDir() {
+			return filepath.SkipDir
+		}
+
+		return nil
+	})
+
+	sort.SliceStable(result, func(i, j int) bool {
+		lhFile := result[i]
+		rhFile := result[j]
+
+		if (lhFile.Directory && rhFile.Directory) ||
+			(!lhFile.Directory && !rhFile.Directory) {
+			return strings.Compare(strings.ToLower(lhFile.Name), strings.ToLower(rhFile.Name)) < 0
+		}
+
+		if lhFile.Directory {
+			return true
+		}
+
+		return false
+	})
+
+	start := (options.Page - 1) * options.PerPage
+	if start < 0 {
+		start = 0
+	}
+
+	end := start + options.PerPage
+	if end > len(result) {
+		end = len(result)
+	}
+	parts := result[start:end]
+
+	count := len(parts)
+	totalCount := len(result)
+
+	response := &PaginatedFileResponse{
+		Count: count,
+		Page: options.Page,
+		Pages: int(math.Ceil(float64(totalCount) / float64(options.PerPage))),
+		TotalCount: totalCount,
+		Files: parts,
+		ParentPath: FilePathToParentPath(filePath),
+	}
+
+	return response, err
 }
 
 // GetContents returns the contents of the file

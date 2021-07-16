@@ -9,8 +9,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -155,12 +157,47 @@ func listFiles() http.Handler {
 		path := queryParams.Get("path")
 		if path == "" {
 			w.WriteHeader(http.StatusBadRequest)
+			writeJson(w, NewServerError(fmt.Sprintf("Missing query parameter: 'path'")))
+			return
+		}
+		path, err := url.QueryUnescape(path)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			writeJson(w, NewServerError(fmt.Sprintf("Unable to decode 'path'")))
 			return
 		}
 
-		files, err := file.ListFiles(path, &file.ListOptions{ShowHidden: false})
+		page := queryParams.Get("page")
+		if page == "" {
+			page = "1"
+		}
+
+		perPage := queryParams.Get("per_page")
+		if perPage == "" {
+			perPage = "15"
+		}
+
+		pageInt, err := strconv.Atoi(page)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		perPageInt, err := strconv.Atoi(perPage)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		options := &file.ListPaginatedFilesOptions{
+			Path: path,
+			PerPage: perPageInt,
+			ShowHidden: false,
+			Page: pageInt,
+		}
+		fileResponse, err := file.ListPaginatedFiles(path, options)
 		if err != nil && err == file.PathNotExist {
-			files = []*file.File{}
+			fileResponse = &file.PaginatedFileResponse{}
 		} else if err != nil && err != file.PathNotExist {
 			if err == file.NotADirectory {
 				w.WriteHeader(http.StatusBadRequest)
@@ -173,17 +210,7 @@ func listFiles() http.Handler {
 			return
 		}
 
-		result := struct {
-			Count int `json:"count"`
-			Files []*file.File `json:"files"`
-			ParentPath string `json:"parentPath"`
-		} {
-			Count: len(files),
-			Files: files,
-			ParentPath: file.FilePathToParentPath(path),
-		}
-
-		resultBytes, err := json.Marshal(result)
+		resultBytes, err := json.Marshal(fileResponse)
 		if err != nil {
 			return
 		}
