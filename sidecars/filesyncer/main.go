@@ -1,26 +1,21 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/onepanelio/templates/sidecars/filesyncer/providers/az"
-	"github.com/onepanelio/templates/sidecars/filesyncer/providers/gcs"
-	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
-	"github.com/onepanelio/templates/sidecars/filesyncer/util"
-	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
-	"github.com/robfig/cron/v3"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/onepanelio/templates/sidecars/filesyncer/providers/s3"
+	"github.com/onepanelio/templates/sidecars/filesyncer/server"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util"
+	"github.com/onepanelio/templates/sidecars/filesyncer/util/file"
+	"github.com/robfig/cron/v3"
 )
 
-func help(error string, flags *flag.FlagSet) {
+func help(error, action string, flags *flag.FlagSet) {
 	if error != "" {
 		fmt.Printf("Error: %v\n\n", error)
 	}
@@ -29,33 +24,86 @@ func help(error string, flags *flag.FlagSet) {
 		fmt.Print("The commands are:\n\n")
 		fmt.Println("   download\t download files from bucket or container")
 		fmt.Println("   upload\t upload files to bucket or container")
+		fmt.Println("   server\t act as file server sidecar")
 		os.Exit(1)
 	}
-	fmt.Printf("Usage:\n   %s %s [options]\n\n", os.Args[0], util.Action)
+	fmt.Printf("Usage:\n   %s %s [options]\n\n", os.Args[0], action)
 	fmt.Println("The options are:")
 	flags.PrintDefaults()
 	os.Exit(1)
 }
 
-func main() {
-	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload {
-		help("Please indicate if this is an 'upload' or 'download' action", nil)
+func validateBackendFlagValid(backend string) error {
+	backendStorages := strings.Split(backend, ",")
+	if len(backendStorages) == 0 {
+		return fmt.Errorf("unknown configuration for backend flag: '%v'", backend)
 	}
-	util.Action = os.Args[1]
+	if len(backendStorages) > 2 {
+		return fmt.Errorf("unknown configuration for backend flag, more than 2 results")
+	}
+	for _, backendStorage := range backendStorages {
+		if backendStorage != "local-storage" && backendStorage != "object-storage" {
+			return fmt.Errorf("unknown backend option: '%v'", backendStorage)
+		}
+	}
 
-	flags := flag.NewFlagSet(util.Action, flag.ExitOnError)
-	flags.StringVar(&util.Provider, "provider", "", "Storage provider: s3 (default), az or gcs")
-	flags.StringVar(&util.Path, "path", "", "Path to local directory")
-	flags.StringVar(&util.Bucket, "bucket", "", "Bucket or container name")
-	flags.StringVar(&util.Prefix, "prefix", "", "Key prefix in bucket or container")
-	flags.StringVar(&util.Interval, "interval", "", "Sync interval in seconds")
+	return nil
+}
+
+func parseBackendFlag(backend string) (localStorage, objectStorage bool) {
+	backendStorages := strings.Split(backend, ",")
+
+	for _, backendStorage := range backendStorages {
+		if backendStorage == "local-storage" {
+			localStorage = true
+		}
+
+		if backendStorage == "object-storage" {
+			objectStorage = true
+		}
+	}
+
+	return localStorage, objectStorage
+}
+
+func main() {
+	action := os.Args[1]
+	if len(os.Args) < 2 || os.Args[1] != util.ActionUpload && os.Args[1] != util.ActionDownload && os.Args[1] != util.ActionServer {
+		help("Please indicate if this is an 'upload', 'download', or 'server' action", action, nil)
+	}
+
+	var filepath, bucket, prefix, interval, serverURL, serverURLPrefix, backend string
+	var initialDelay time.Duration
+	flags := flag.NewFlagSet(action, flag.ExitOnError)
+	flags.StringVar(&filepath, "path", "", "Path to local directory")
+	flags.StringVar(&bucket, "bucket", "", "Bucket or container name")
+	flags.StringVar(&prefix, "prefix", "", "Key prefix in bucket or container")
+	flags.StringVar(&interval, "interval", "", "Sync interval in seconds")
 	flags.StringVar(&util.StatusFilePath, "status-path", path.Join(".status", "status.json"), "Location of file that keeps track of statistics for file uploads/downloads")
-	flags.StringVar(&util.ServerURL, "host", "localhost:8888", "URL that you want the server to run")
-	flags.StringVar(&util.ServerURLPrefix, "server-prefix", "", "Prefix for the server api urls")
+	flags.StringVar(&serverURL, "host", "localhost:8888", "URL that you want the server to run")
+	flags.StringVar(&serverURLPrefix, "server-prefix", "", "Prefix for the server api urls")
 	flags.StringVar(&util.ConfigLocation, "config-path", "/etc/onepanel", "The location of config files. A file named artifactRepository is expected to be here.")
-	flags.DurationVar(&util.InitialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
-	flags.BoolVar(&util.JustServer, "just-server", false, "If true, doesn't perform any syncing.")
+	flags.DurationVar(&initialDelay, "initial-delay", 30*time.Second, "Initial delay before program starts syncing files. Acceptable values are: 30s")
+	flags.StringVar(&backend, "backend", "local-storage,object-storage", "The file API you want to expose. Defaults to be local and object storage.")
 	flags.Parse(os.Args[2:])
+
+
+	if err := validateBackendFlagValid(backend); err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+
+	localStorage, objectStorage := parseBackendFlag(backend)
+
+	serverConfig := server.Config{
+		URL:       serverURL,
+		URLPrefix: serverURLPrefix,
+	}
+
+	if action == util.ActionServer && localStorage && !objectStorage {
+		server.StartServer(serverConfig)
+		return
+	}
 
 	if err := file.CreateIfNotExist(util.StatusFilePath); err != nil {
 		fmt.Printf("[error] Unable to create status file path '%v'. Message: %v\n", util.StatusFilePath, err)
@@ -69,154 +117,51 @@ func main() {
 	}
 	util.Status = status
 
-	if util.JustServer {
-		startServer()
-		return
-	}
-
 	config, err := util.GetArtifactRepositoryConfig()
 	if err != nil {
-		help("artifact repository config was not found", flags)
+		help("artifact repository config was not found", action, flags)
 	}
 	if config == nil {
 		fmt.Println("Unknown error loading ArtifactRepositoryConfig")
 		return
 	}
 
-	util.Config = config
-
-	if util.Path == "" {
-		util.Path = util.Getenv("FS_PATH", "")
-	}
-	if util.Path == "" {
-		help("path is required", flags)
+	if action == util.ActionServer  {
+		server.StartServer(serverConfig)
+		return
 	}
 
-	if util.Bucket == "" {
-		util.Bucket = util.Getenv("FS_BUCKET", "")
+	if filepath == "" {
+		filepath = util.Getenv("FS_PATH", "")
 	}
-	if util.Bucket == "" {
-		if config.S3 != nil {
-			util.Bucket = config.S3.Bucket
-		}
-		if config.GCS != nil {
-			util.Bucket = config.GCS.Bucket
-		}
-	}
-	if util.Bucket == "" {
-		help("bucket or container name is required", flags)
+	if filepath == "" {
+		help("path is required", action, flags)
 	}
 
-	if util.Provider == "" {
-		util.Provider = util.Getenv("FS_PROVIDER", "")
-	}
-	if util.Provider == "" {
-		if config.S3 != nil {
-			util.Provider = "s3"
-		}
-		if config.GCS != nil {
-			util.Provider = "gcs"
-		}
+	if prefix == "" {
+		prefix = util.Getenv("FS_PREFIX", "")
 	}
 
-	if util.Prefix == "" {
-		util.Prefix = util.Getenv("FS_PREFIX", "")
+	if interval == "" {
+		interval = util.Getenv("FS_INTERVAL", "300")
 	}
 
-	if util.Interval == "" {
-		util.Interval = util.Getenv("FS_INTERVAL", "300")
-	}
+	go server.StartServer(serverConfig)
 
-	go startServer()
-
-	fmt.Printf("Sleeping for  %v\n", util.InitialDelay)
-	time.Sleep(util.InitialDelay)
+	fmt.Printf("Sleeping for  %v\n", initialDelay)
+	time.Sleep(initialDelay)
 	fmt.Printf("Done sleeping.\n")
 
 	c := cron.New()
-	spec := fmt.Sprintf("@every %ss", util.Interval)
-	switch util.Provider {
-	case "az":
-		go az.Sync()
-		c.AddFunc(spec, az.Sync)
-	case "gcs":
-		go gcs.Sync()
-		c.AddFunc(spec, gcs.Sync)
-	case "s3":
-		fallthrough
-	default:
-		go s3.Sync()
-		c.AddFunc(spec, s3.Sync)
+	spec := fmt.Sprintf("@every %ss", interval)
+	params := s3.SyncParameters{
+		Action: action,
+		Prefix: prefix,
+		Path:   filepath,
+		Delete: true,
 	}
+	go s3.Sync(params)()
+	c.AddFunc(spec, s3.Sync(params))
 
 	c.Run()
-}
-
-// routeSyncStatus reads the request and routes it to either a GET or PUT endpoint based on the method
-// 405 is returned if it is neither a GET nor a PUT
-func routeSyncStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	if r.Method == "" || r.Method == "GET" {
-		getSyncStatus(w, r)
-	} else if r.Method == "PUT" {
-		putSyncStatus(w, r)
-	} else {
-		w.WriteHeader(405) // not allowed
-	}
-}
-
-// getSyncStatus returns the util.Status in JSON form
-func getSyncStatus(w http.ResponseWriter, r *http.Request) {
-	data, err := json.Marshal(util.Status)
-	if err != nil {
-		log.Printf("[error] marshaling util.Status: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("content-type", "application/json")
-	if _, err := io.WriteString(w, string(data)); err != nil {
-		log.Printf("[error] %s\n", err)
-	}
-}
-
-// putSyncStatus updates the util.Status with the input values
-// all values are overridden
-func putSyncStatus(w http.ResponseWriter, r *http.Request) {
-	content, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("[error] reading sync status put body: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if err := json.Unmarshal(content, util.Status); err != nil {
-		log.Printf("[error] unmarshaling sync status body: %s: %s\n", content, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	getSyncStatus(w, r)
-}
-
-func handleUnsupportedEndpoint(w http.ResponseWriter, r *http.Request) {
-	relativeEndpoint := r.URL.Path
-	if strings.HasPrefix(r.URL.Path, util.ServerURLPrefix) {
-		relativeEndpoint = r.URL.Path[len(util.ServerURLPrefix):]
-	}
-	log.Printf("Miss [endpoint] %v. Relative: %v", r.URL.Path, relativeEndpoint)
-	log.Printf("RequestURI %v. ServerURLPrefix %v", r.URL.Path, util.ServerURLPrefix)
-
-	w.WriteHeader(http.StatusNotFound)
-}
-
-// startServer starts a server that provides information about the file sync status.
-func startServer() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(util.ServerURLPrefix+"/api/status", routeSyncStatus)
-	mux.HandleFunc("/", handleUnsupportedEndpoint)
-
-	fmt.Printf("Starting server at %s. Prefix: %v\n", util.ServerURL, util.ServerURLPrefix)
-	err := http.ListenAndServe(util.ServerURL, mux)
-	log.Printf("%v", err)
 }

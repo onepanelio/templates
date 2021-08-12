@@ -1,0 +1,52 @@
+entrypoint: main
+templates:
+  - name: main
+    dag:
+      tasks:
+      - name: metrics-mocker
+        template: metrics-mocker
+      - name: metrics-writer
+        template: metrics-writer
+        dependencies: [metrics-mocker]
+        arguments:
+          # Use sys-metrics artifact output from metrics-mocker
+          # Note that this output is automatically available from previous task
+          artifacts:
+          - name: sys-metrics
+            from: "{{tasks.metrics-mocker.outputs.artifacts.sys-metrics}}"
+
+  - name: metrics-mocker
+    script:
+      image: python:3.9.1-alpine
+      command: [python, '-u']
+      source: |
+        import json
+
+        # Mock metrics
+        metrics = [
+            {'name': 'accuracy', 'value': 0.981},
+            {'name': 'loss', 'value': 0.018},
+        ]
+        
+        # Write mock metrics to `/tmp/sys-metrics.json`
+        # Writing to this exact file automatically exposes this file to next Workflow task
+        with open('/tmp/sys-metrics.json', 'w') as f:
+            json.dump(metrics, f)
+  - name: metrics-writer
+    inputs:
+      artifacts:
+      - name: sys-metrics
+        path: /tmp/sys-metrics.json
+      - git:
+          repo: https://github.com/onepanelio/templates.git
+          revision: v0.18.0
+        name: src
+        path: /mnt/src
+    container:
+      image: onepanel/python-sdk:v0.19.0
+      command:
+        - python
+        - -u
+      args:
+        - /mnt/src/tasks/metrics-writer/main.py
+        - --from_file=/tmp/sys-metrics.json

@@ -3,10 +3,10 @@ import time
 import argparse
 import datetime
 
-from nnicli import Experiment
+from nni.experiment import LegacyExperiment
 
 def main(args):
-    exp = Experiment()
+    exp = LegacyExperiment()
 
     exp.start_experiment(args.config, port=args.port)
 

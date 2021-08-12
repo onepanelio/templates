@@ -37,7 +37,11 @@ def split_dataset(dataset_name: str='instances_default.json', val_split: float=0
                 annotation_id = len(val_set['annotations'])
                 new_annotation['id'] = annotation_id
                 new_annotation['image_id'] = image_id
+                segmentations = new_annotation['segmentation']
                 new_annotation['segmentation'] = []
+                for segmentation in segmentations:
+                    if len(segmentation) > 4 and len(segmentation) % 2 == 0:
+                        new_annotation['segmentation'].append(segmentation)
                 val_set['annotations'].append(new_annotation)
             old_filename = new_image['file_name'].split('/')[-1]
             img_sufix = old_filename.split('.')[-1]
@@ -51,7 +55,11 @@ def split_dataset(dataset_name: str='instances_default.json', val_split: float=0
                 annotation_id = len(train_set['annotations'])
                 new_annotation['id'] = annotation_id
                 new_annotation['image_id'] = image_id
+                segmentations = new_annotation['segmentation']
                 new_annotation['segmentation'] = []
+                for segmentation in segmentations:
+                    if len(segmentation) > 4 and len(segmentation) % 2 == 0:
+                        new_annotation['segmentation'].append(segmentation)
                 train_set['annotations'].append(new_annotation)
             old_filename = new_image['file_name'].split('/')[-1]
             img_sufix = old_filename.split('.')[-1]
@@ -71,15 +79,12 @@ def split_dataset(dataset_name: str='instances_default.json', val_split: float=0
 
 def create_split_folders(output_path: str) -> None:
     directories = [
-        os.path.dirname(output_path+'train_set/'),
-        os.path.dirname(output_path+'train_set/images/'),
-        os.path.dirname(output_path+'train_set/annotations/'),
-        os.path.dirname(output_path+'eval_set/'),
-        os.path.dirname(output_path+'eval_set/images/'),
-        os.path.dirname(output_path+'eval_set/annotations/')
+        'train_set/images/',
+        'train_set/annotations/',
+        'eval_set/images/',
+        'eval_set/annotations/'
     ]
     for directory in directories:
-        try:
-            os.stat(directory)
-        except:
-            os.mkdir(directory) 
+        full_dir = os.path.join(output_path, directory)
+        if not os.path.isdir(full_dir):
+            os.makedirs(full_dir)
